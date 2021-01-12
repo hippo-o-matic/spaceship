@@ -15,6 +15,13 @@ enum INPUT_BIND_TYPE {
     MOUSE_B
 };
 
+enum INPUT_AC {
+    RELEASE,
+    PRESS,
+    REPEAT,
+    ONCE
+};
+
 // A class for setting up input binds, assigning keys to them, and remmaping those keys through config files
 class Input {
 public:
@@ -24,6 +31,7 @@ public:
         int key;
         int action;
         int type;
+        bool block;
     };
 
     static double mouse_x, mouse_y;

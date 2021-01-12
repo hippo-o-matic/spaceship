@@ -118,14 +118,27 @@ void Input::setFramebufferCallback(std::function<void(GLFWwindow*, int, int)> fu
 
 // Check each bind and run its function
 void Input::process(GLFWwindow* win) {
+    std::function<int(GLFWwindow*, int)> check_f;
     for(auto bt = binds.begin(); bt != binds.end(); bt++) {
-        if(bt->type == MOUSE_B) {
-            if(glfwGetMouseButton(win, bt->key) == bt->action)
-                bt->func();
-        } else { // if bt->type == KEY
-            if (glfwGetKey(win, bt->key) == bt->action)
-                bt->func();
+        if(bt->type == MOUSE_B)
+            check_f = glfwGetMouseButton;
+        if(bt->type == KEY)
+            check_f = glfwGetKey;
+        
+        if(bt->action == INPUT_AC::ONCE) {
+            int state = check_f(win, bt->key);
+            if(state == GLFW_PRESS) {
+                if(!bt->block) {
+                    bt->func();
+                    bt->block = true;
+                }
+            } else if(state == GLFW_RELEASE) {
+                bt->block = false;
+            }
         }
+
+        if(check_f(win, bt->key) == bt->action)
+            bt->func();
     }
 }
 
