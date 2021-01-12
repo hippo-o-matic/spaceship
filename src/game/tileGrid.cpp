@@ -1,12 +1,16 @@
 #include "game/tileGrid.h"
 
-TileGrid::TileGrid(glm::uvec2 _tile_size, glm::uvec2 _chunk_size, unsigned _chunk_slots) : tile_size(_tile_size), chunk_size(chunk_size) {
+TileGrid::TileGrid(glm::uvec2 _tile_size, glm::uvec2 _chunk_size, unsigned _chunk_slots) : tile_size(_tile_size), chunk_size(_chunk_size) {
 	initBuffers(_chunk_slots);
 }
 
-TileGrid::TileGrid(std::string path, glm::uvec2 _tile_size, glm::uvec2 _chunk_size, unsigned _chunk_slots) : tile_size(_tile_size), chunk_size(chunk_size) {
+TileGrid::TileGrid(std::string path, glm::uvec2 _tile_size, glm::uvec2 _chunk_size, unsigned _chunk_slots) : tile_size(_tile_size), chunk_size(_chunk_size) {
 	openFile(path);
 	initBuffers(_chunk_slots);
+}
+
+glm::uvec2 TileGrid::getChunkSize() {
+	return chunk_size;
 }
 
 unsigned TileGrid::addTexMap(TexMap map) {
@@ -25,7 +29,7 @@ unsigned TileGrid::addTexMap(TexMap map) {
 	return offset;
 }
 
-std::vector<TileGrid::Chunk>::iterator TileGrid::addChunk(glm::ivec2 position, std::multimap<unsigned, glm::ivec2> tiles, unsigned file_pos, unsigned file_size) {
+TileGrid::Chunk* TileGrid::addChunk(glm::ivec2 position, std::multimap<unsigned, glm::ivec2> tiles, unsigned file_pos, unsigned file_size) {
 	// Not sure what this was for
 	// if(!tileIDOffset) {
 	// 	for(std::pair<unsigned, glm::vec2> tile : tiles) {
@@ -38,14 +42,15 @@ std::vector<TileGrid::Chunk>::iterator TileGrid::addChunk(glm::ivec2 position, s
 		tptm.emplace(tmap.first, 0);
 	}
 	
-	chunks.push_back({
+	chunks.push_front({
 		position,
 		tiles,
-		{},
-		file_pos
+		tptm,
+		file_pos,
+		file_size
 	});
 
-	return chunks.end()--;
+	return &chunks.front();
 }
 
 TileGrid::Chunk* TileGrid::getChunk(glm::vec2 position) {
@@ -60,14 +65,25 @@ TileGrid::Chunk* TileGrid::getChunk(glm::vec2 position) {
 	});
 
 	if(chunk_it == chunks.end()) {
-		std::multimap<unsigned, glm::ivec2> tiles;
-		chunk_it = addChunk(chunk_pos, tiles);
+		return addChunk(chunk_pos, {});
 	}
 
 	return &(*chunk_it);
 }
 
-void TileGrid::addTileToGrid(glm::vec2 pos, unsigned tileID) {
+TileGrid::Chunk* TileGrid::getChunkFromGridPos(glm::ivec2 chunk_pos) {
+	auto chunk_it = std::find_if(chunks.begin(), chunks.end(), [chunk_pos](auto c){
+		return c.pos == chunk_pos;
+	});
+
+	if(chunk_it == chunks.end()) {
+		return addChunk(chunk_pos, {});
+	}
+
+	return &(*chunk_it);
+}
+
+TileGrid::Chunk* TileGrid::addTileToGrid(glm::vec2 pos, unsigned tileID) {
 	Chunk* chunk = getChunk(pos);
 
 	glm::ivec2 tile_pos = glm::ivec2(std::round(pos.x), std::round(pos.y)); // Absolute position in the grid
@@ -75,6 +91,7 @@ void TileGrid::addTileToGrid(glm::vec2 pos, unsigned tileID) {
 	tile_pos.y %= chunk_size.y * ((tile_pos.y < 0) ? -1 : 1);
 
 	addTileToChunk(tile_pos, tileID, chunk);
+	return chunk;
 }
 
 void TileGrid::addTileToChunk(glm::ivec2 position, unsigned tileID, Chunk* chunk) {
@@ -108,19 +125,6 @@ void TileGrid::initBuffers(unsigned slot_count) {
 	}
 
 	glBindVertexArray(VAO); // Start using this array
-	
-	// vertex positions
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2d), (void*)0);
-
-	// The texture coordinates of this tile
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2,
-		GL_FLOAT,
-		GL_FALSE,
-		sizeof(Vertex2d),
-		(void*)offsetof(Vertex2d, tex)
-	);
 
 	// Set tile indices for all possible tiles in a chunk
 	// We only need 1 EBO because any possible combination of tiles will
@@ -138,20 +142,53 @@ void TileGrid::initBuffers(unsigned slot_count) {
 		GL_STATIC_DRAW
 	);
 
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+
+	// Update the vbos once to initialize them (delete me)
+	for(auto slot : chunk_slots) {
+		updateVBO(slot.first);
+		glBindVertexArray(VAO);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2d), (void*)0);
+
+		glVertexAttribPointer(1, 2,
+			GL_FLOAT,
+			GL_FALSE,
+			sizeof(Vertex2d),
+			(void*)offsetof(Vertex2d, tex)
+		);
+	}
+
 	glBindVertexArray(0); // Clear binds
 }
 
 
 void TileGrid::updateVBO(unsigned VBO) {
-	std::vector<float> chunk_verts;
+	std::vector<Vertex2d> chunk_verts;
 	Chunk* chunk = chunk_slots.at(VBO);
 	if(chunk == nullptr) // No assigned chunk, skip
 		return;
 
+	if(chunk->tiles.empty()) {
+		glBindVertexArray(VAO);
+		// Set tile vertices
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(
+			GL_ARRAY_BUFFER,
+			0, 
+			nullptr,
+			GL_STATIC_DRAW
+		);
+
+		glBindVertexArray(0);
+		return;
+	}
+		
 	// Fill final_tiles' tiles with the correct texture coordinates depending on their texture map
 	auto tex = textures.begin(); // Iterator for texture maps
 	auto tile = chunk->tiles.begin(); // Iterator for tiles
-
+	chunk->tiles_per_texmap.at(tex->first) = 0;
 	while(tile != chunk->tiles.end()) {
 		// If the next map offset is less than the current tile, go to that texmap
 		// Also make sure the next one isnt beyond the end of the texmaps
@@ -264,20 +301,20 @@ void TileGrid::drawChunks(Shader &shader) {
 
 	// Bind the grid's VAO and EBO
 	glBindVertexArray(VAO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 	for(auto slot : chunk_slots) {
-		const unsigned& VBO = slot.first;
 		Chunk* chunk = slot.second;
 		if(chunk == nullptr)
 			continue; // No assigned chunk data, skip
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO); // There is a seperate VBO for each loaded slot, bind it here
+		glBindBuffer(GL_ARRAY_BUFFER, slot.first); // There is a seperate VBO for each loaded slot, bind it here
 
 		unsigned i_offset = 0;
 		for(auto tex : textures) { // For each texmap, draw the number of tiles that use this map
 			TexMap& map = tex.second;
 			unsigned index_count = chunk->tiles_per_texmap.at(tex.first) * 6;
+			if(index_count == 0)
+				continue;
 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, map.getGLID());
@@ -390,10 +427,9 @@ void TileGrid::loadChunksFromPos(std::vector<glm::ivec2> positions) {
 		auto chunk = std::find_if(chunks.begin(), chunks.end(), [&p](Chunk& c) {
 			return c.pos == p;
 		});
-		auto next = chunk + 1; // Get an iterator to the next chunk
 
 		file.seekg(chunk->file_pos);
-		unsigned tile_count = (next->file_pos - chunk->file_pos) / (sizeof(unsigned) + sizeof(float) * 2); // Find the number of tiles this chunk has
+		unsigned tile_count = (chunk->file_size) / (sizeof(unsigned) + sizeof(float) * 2); // Find the number of tiles this chunk has
 		for(; tile_count > 0; tile_count--) {
 			unsigned tileID;
 			int x, y;
@@ -424,7 +460,8 @@ void TileGrid::saveFile(std::string path) {
 	
 	file << tile_size.x << tile_size.y;
 	file << chunk_size.x << chunk_size.y; // Specify width and height
-	file << chunks.size(); // Number of chunks
+	size_t size_pos = file.tellp();
+	file << (size_t)0; // Number of chunks, we'll write into this later
 
 	size_t file_pos = file.tellp();
 	for(auto chunk : chunks) {
@@ -440,6 +477,12 @@ void TileGrid::saveFile(std::string path) {
 		// Advance the file_pos for the next chunk
 		file_pos += chunk_size; // Add the size of the chunk itself
 	}
+
+	// Write the number of chunks
+	file.seekp(size_pos);
+	// Position after entries minus position before (plus the size of this variable)
+	// Divided by the size of an entry gives us the number of entries
+	file << (file_pos - size_pos + sizeof(size_t)) / (sizeof(float) * 2 + sizeof(unsigned) * 2);
 
 	// Start writing chunk data
 	for(auto chunk : chunks) {

@@ -40,8 +40,7 @@ void Editor::init() {
 void Editor::mouseButton(GLFWwindow* win, int button, int action) {
 	static bool press;
 	if(button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && !press) {
-		grid->addTileToGrid(mouseToWorld(camera), selected);
-		grid->updateBuffer();
+		grid->updateChunk(grid->addTileToGrid(mouseToWorld(camera), selected));
 		press = true;
 	}
 	if(button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
@@ -55,9 +54,9 @@ void Editor::scrollChangeTile(GLFWwindow* window, double x, double y) {
 }
 
 void Editor::scrollZoom(GLFWwindow* window, double x, double y) {
-	camera->fov += y * 0.5;
-	if(camera->fov > 5)
-		camera->fov = 5;
+	camera->fov += y * -0.5;
+	if(camera->fov > 10)
+		camera->fov = 10;
 	if(camera->fov < .5)
 		camera->fov = .5;
 }

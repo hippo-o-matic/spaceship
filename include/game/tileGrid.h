@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <vector>
 #include <fstream>
+#include <forward_list>
 
 class TileGrid {
 public:
@@ -24,15 +25,19 @@ public:
 		unsigned file_size = 0;
 	};
 
-	TileGrid(glm::uvec2 _tile_size = glm::uvec2(1), glm::uvec2 _chunk_size = glm::uvec2(32), unsigned _chunk_slots = 4);
+	TileGrid(glm::uvec2 _tile_size = glm::uvec2(1), glm::uvec2 _chunk_size = glm::uvec2(32), unsigned _chunk_slots = 9);
 	TileGrid(std::string path, glm::uvec2 _tile_size = glm::uvec2(1), glm::uvec2 _chunk_size = glm::uvec2(32), unsigned _chunk_slots = 4);
 
-	std::map<unsigned, TexMap> textures; 
+	// This grids chunks, declared by a map file and loaded in when needed
+	std::map<unsigned, Chunk*> chunk_slots;
 
-	std::vector<TileGrid::Chunk>::iterator addChunk(glm::ivec2 position, std::multimap<unsigned, glm::ivec2> tiles, unsigned file_pos = 0, unsigned file_size = 0);
+	glm::uvec2 getChunkSize();
+
+	Chunk* addChunk(glm::ivec2 position, std::multimap<unsigned, glm::ivec2> tiles, unsigned file_pos = 0, unsigned file_size = 0);
 	Chunk* getChunk(glm::vec2 position);
+	Chunk* getChunkFromGridPos(glm::ivec2 chunk_pos);
 
-	void addTileToGrid(glm::vec2 position, unsigned tileID);
+	Chunk* addTileToGrid(glm::vec2 position, unsigned tileID);
 	void addTileToChunk(glm::ivec2 position, unsigned tileID, Chunk* chunk);
 
 	unsigned addTexMap(TexMap);
@@ -51,13 +56,12 @@ private:
 	const unsigned format_version = 0;
 
 	unsigned VAO, EBO;
-	glm::uvec2 chunk_size = glm::uvec2(32); // Columns and rows in a chunk
 	glm::uvec2 tile_size; // The amount of world units the tiles should be
+	glm::uvec2 chunk_size = glm::uvec2(32); // Columns and rows in a chunk
 	std::string path;
+	std::forward_list<Chunk> chunks;
 
-	// This grids chunks, declared by a map file and loaded in when needed
-	std::vector<Chunk> chunks;
-	std::map<unsigned, Chunk*> chunk_slots;
+	std::map<unsigned, TexMap> textures; 
 
 	void initBuffers(unsigned slot_count); // Called once to initalize buffers, setting up `slot_count` slots
 };

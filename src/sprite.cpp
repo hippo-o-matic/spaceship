@@ -25,6 +25,7 @@ void Sprite::draw(Shader &shader){
 
 	// draw mesh
 	glBindVertexArray(VAO);
+	// glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
 	
 	// Cleanup
@@ -42,18 +43,17 @@ void Sprite::init_buffers() {
 	glBindVertexArray(VAO); // Start using this array
 
 	// vertex positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2d), (void*)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2d), (void*)0);
 
 	// vertex texture coords
+	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2,
 		GL_FLOAT,
 		GL_FALSE,
 		sizeof(Vertex2d),
 		(void*)offsetof(Vertex2d, tex)
 	);
-	glEnableVertexAttribArray(1);
-
 
 	glBindVertexArray(0); // Clear binds
 }

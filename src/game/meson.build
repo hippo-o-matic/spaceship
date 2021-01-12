@@ -1,4 +1,5 @@
 src += files(
 	'ship.cpp',
-	'tileGrid.cpp'
+	'tileGrid.cpp',
+	'cloader.cpp'
 )

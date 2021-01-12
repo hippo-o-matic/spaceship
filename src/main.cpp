@@ -12,7 +12,7 @@ int main() {
 	float deltaTime = 0.0f;
 	float lastFrame = 0.0f;
 
-	// Testing zone
+	// Testing zone /////////////////////////////////////////
 	Editor::init();
 	Editor::input_map.activate();
 
@@ -23,19 +23,19 @@ int main() {
 	Shader shade("tests/shader/sprite.vs", "tests/shader/sprite.fs");
 	Shader bg("tests/shader/bg.vs", "tests/shader/sprite.fs");
 
-	Sprite background("tests/img/space.png", glm::vec2(0), 0, glm::vec2(5));
+	// Sprite background("tests/img/space.png", glm::vec2(0), 0, glm::vec2(5));
 
 	Sprite test("tests/img/tex.png");
-	Sprite vest("tests/img/gex.png", glm::vec2(.5, .75));
+	Sprite vest("tests/img/gex.png", glm::vec2(1, 1));
 	vest.layer = 1;
 
 	TileGrid grid = gridTest();
 	Editor::grid = &grid;
 	Editor::camera = &cam;
-
-	TexMap map("tests/textures/colorgrid.png", 24, 24);
-	Sprite aiee(map.getTileTexture(0), glm::vec2(-1,-1));
+	ChunkLoader chunky(&cam, &grid, 1);
 	
+	//////////////////////////////////////////////
+
 	Input control;
 	control.activate();
 	float speed = 5;
@@ -82,11 +82,12 @@ int main() {
 		bg.set("view", cam.getViewMatrix());
 		bg.set("projection", cam.getProjectionMatrix());
 
+		chunky.loadChunksSquare();
+
 		// background.draw(bg);
 
 		test.draw(shade);
-		aiee.draw(shade);
-		// vest.draw(shade);
+		vest.draw(shade);
 		grid.drawChunks(shade);
 
 		glfwSwapBuffers(window);
@@ -109,8 +110,6 @@ TileGrid gridTest() {
 	TexMap map("tests/textures/colorgrid.png", 24, 24);
 	grid.addTexMap(map);
 	grid.addChunk(glm::vec2(0), tiles);
-
-	grid.updateBuffer();
 
 	return grid;
 }

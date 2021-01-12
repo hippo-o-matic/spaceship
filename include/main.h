@@ -11,4 +11,5 @@
 
 #include "game/tileGrid.h"
 #include "editor/gridEditor.h"
+#include "game/cloader.h"
 TileGrid gridTest();
