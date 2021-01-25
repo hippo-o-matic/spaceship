@@ -1,6 +1,6 @@
 #include "mesh2d.h"
 
-const std::vector<Vertex2d> genTexCoords2d(std::vector<float> v_positions, std::vector<glm::vec2> tex_basis) {
+const std::vector<Vertex2d> genTexCoords2d(std::vector<float> v_positions, std::vector<glm::vec2> tex_basis, unsigned int attribs) {
 	std::vector<Vertex2d> vertices;
 
 	// Gather all the x and y values
@@ -21,18 +21,59 @@ const std::vector<Vertex2d> genTexCoords2d(std::vector<float> v_positions, std::
 	float y_min = *y_vals.begin();
 	float y_max = y_vals.back();
 
+	glm::mat4 texTransform = glm::mat4(1);
+
+	
+	if(attribs & REFLECT_H)
+		texTransform = texTransform * glm::mat4(glm::mat2(glm::vec2(1,0),glm::vec2(0,-1)));
+	if(attribs & REFLECT_V) {
+		glm::mat4 reflectMat = glm::mat4(1);
+		reflectMat[1][1] = -1;
+		texTransform = texTransform * reflectMat;
+	}
+	if(attribs & ROTATE_90)
+		texTransform = glm::rotate(texTransform, glm::radians(90.f), glm::vec3(0, 0, 1));
+	
+	texTransform = glm::scale(texTransform, glm::vec3(tex_basis[1] - tex_basis[0], 0));
+	texTransform = glm::translate(texTransform, glm::vec3(tex_basis[0], 0));
+
+
 	// Construct vertexes with the same positions, and texcoords from a scale of 0 to 1
 	// depending on where the vertexes are relative to the polygon
 	for(auto it = v_positions.begin(); it != v_positions.end(); it++) {
-		float x = *it, y = *(++it);
+		float x = *it, y = *(++it);		
+
+		// The texture coordinate for this vertex
+		glm::vec3 texCoord = glm::vec3(
+			(x-x_min)/(x_max - x_min),
+			(y-y_min)/(y_max - y_min),
+			0
+		);
+		glm::mat4 tCoordMat = glm::translate(glm::mat4(1), texCoord); // Translate to this point
+		glm::mat4 offsetMat = glm::translate(glm::mat4(1), glm::vec3(.5, .5, 0)); // Translate so attrib operations are centered
+
+		glm::mat4 basisMat = glm::translate(glm::mat4(1), glm::vec3(tex_basis[0], 0)); // Move from the original origin to the new origin (lower left corner of basis) 
+		basisMat = glm::scale(basisMat, glm::vec3(tex_basis[1] - tex_basis[0], 0)); // Scale to the texBasis' size 
+
+		glm::mat4 attribMat = glm::mat4(1);
+		// Check attributes and perform their operations
+		if(attribs & ROTATE_90)
+			attribMat = glm::rotate(attribMat, glm::radians(90.f), glm::vec3(0, 0, 1));
+		if(attribs & ROTATE_180)
+			attribMat = glm::rotate(attribMat, glm::radians(180.f), glm::vec3(0, 0, 1));
+		if(attribs & REFLECT_V)
+			attribMat[1][1] *= -1;
+		if(attribs & REFLECT_H)
+			attribMat[0][0] *= -1;
+
+		attribMat = offsetMat * attribMat * glm::inverse(offsetMat);
+		tCoordMat = basisMat * attribMat * tCoordMat;
+		
 		vertices.push_back(
 			Vertex2d {
 				pos: glm::vec2(x, y),
 				layer: 0,
-				tex: glm::vec2(
-						(x-x_min)/(x_max - x_min) * (tex_basis[1].x - tex_basis[0].x),
-						(y-y_min)/(y_max - y_min) * (tex_basis[1].y - tex_basis[0].y)
-					)
+				tex: glm::vec2(tCoordMat[3])
 			}
 		);
 	}
@@ -94,14 +135,29 @@ const std::vector<Vertex2d> joinCoords(std::vector<glm::vec2> pos, std::vector<V
 	return tex;
 }
 
-const Polygon Primitive::rect(float width, float height, float offsetX, float offsetY, unsigned index_offset, std::vector<glm::vec2> tex_basis) {
+const std::vector<Vertex2d>& rebaseTexCoords(std::vector<Vertex2d>& verts, std::vector<glm::vec2> new_basis) {
+	for(Vertex2d& v : verts) {
+		v.tex *= (new_basis[1] - new_basis[0]);
+		v.tex += new_basis[0];
+	}
+	return verts;
+}
+
+const Polygon Primitive::rect(
+	glm::vec2 size,
+	glm::vec2 offset,
+	unsigned int attribs,
+	unsigned index_offset,
+	std::vector<glm::vec2> tex_basis
+){
 	Polygon p;
+
 	p.vertices = genTexCoords2d({
-		offsetX + -width / 2, offsetY + -height / 2,
-		offsetX + width / 2,  offsetY + -height / 2,
-		offsetX + width / 2,  offsetY + height / 2,
-		offsetX + -width / 2, offsetY + height / 2
-	}, tex_basis);
+		offset.x + -size.x / 2, offset.y + -size.y / 2,
+		offset.x + size.x / 2,  offset.y + -size.y / 2,
+		offset.x + size.x / 2,  offset.y + size.y / 2,
+		offset.x + -size.x / 2, offset.y + size.y / 2
+	}, tex_basis, attribs);
 
 	p.indices = {
 		index_offset + 0, index_offset + 1, index_offset + 2,

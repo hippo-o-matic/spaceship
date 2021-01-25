@@ -1,12 +1,11 @@
 #include "game/cloader.h"
 
-ChunkLoader::ChunkLoader(TileGrid* grid, unsigned radius) : grid(grid), radius(radius) {}
-ChunkLoader::ChunkLoader(Object2d* parent, TileGrid* grid, unsigned radius) : Object2d(parent), grid(grid), radius(radius) {}
+ChunkLoader::ChunkLoader(std::string id, TileGrid* grid, unsigned radius) : Object2d(id), grid(grid), radius(radius) {}
 
 std::vector<glm::ivec2> ChunkLoader::calcChunkCoords(glm::ivec2 offset) {
 	std::vector<glm::ivec2> chunk_coords;
-	for(unsigned i=0; i < radius * 2 + 1; i++) { // Row
-		for(unsigned j=0; j < radius * 2 + 1; j++) { // Column
+	for(int i = -radius; i <= radius; i++) { // Row
+		for(int j = -radius; j <= radius; j++) { // Column
 			chunk_coords.push_back(glm::ivec2(i, j) + offset);
 		}
 	}
@@ -16,12 +15,15 @@ std::vector<glm::ivec2> ChunkLoader::calcChunkCoords(glm::ivec2 offset) {
 
 void ChunkLoader::loadChunksSquare() {
 	glm::vec2 world_pos = getWorldPos(); // Get the position of this chunkloader
-	glm::uvec2 size = grid->getChunkSize(); // Get the chunk size of the grid we load
+	glm::uvec2 c_size = grid->getChunkSize(); // Get the chunk size of the grid we load
+	glm::uvec2 t_size = grid->getTileSize();
+
 	// Get the chunk coordinate that this loader is in
 	glm::ivec2 now_pos = glm::ivec2(
-		world_pos.x / size.x + ((world_pos.x < 0) ? -1 : 0),
-		world_pos.y / size.y + ((world_pos.y < 0) ? -1 : 0)
+		floor((world_pos.x + t_size.x / 2.f) / c_size.x),
+		floor((world_pos.y + t_size.y / 2.f) / c_size.y)
 	);
+
 	// Remember what the last chunk we were in was
 	static glm::ivec2 last_pos = glm::ivec2(world_pos.x + radius * 2 + 1, 0); // Initialized so we start by loading everything once
 	

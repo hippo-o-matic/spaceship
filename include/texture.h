@@ -40,6 +40,7 @@ public:
 	std::string getPath();
 	std::vector<glm::vec2> getTileCoords(unsigned index);
 	Texture getTileTexture(unsigned index);
+	std::vector<glm::vec2> getTileBasis(unsigned index);
 
 	Texture texture;
 };

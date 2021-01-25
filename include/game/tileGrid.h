@@ -7,6 +7,7 @@
 
 #include "glad/glad.h"
 #include "glm/glm.hpp"
+#include "tileGrid.pb.h"
 
 #include <map>
 #include <unordered_map>
@@ -16,40 +17,53 @@
 
 class TileGrid {
 public:
+	struct Tile {
+		unsigned tileID;
+		glm::ivec2 pos;
+		unsigned int attribs = NONE;
+	};
+	struct TileLess {
+		bool operator()(const Tile& a, const Tile& b) const {
+			return a.tileID < b.tileID;
+		}
+	};
+	typedef std::multiset<Tile, TileLess> TileSet;
+
 	// A collection of tiles, used for extracting from files
 	struct Chunk {
 		glm::ivec2 pos;
-		std::multimap<unsigned, glm::ivec2> tiles;
+		TileSet tiles;
 		std::map<unsigned, unsigned> tiles_per_texmap = {}; // Stores the amount of tiles that use a texmap <same key from textures, tile_num>
-		unsigned file_pos = 0; // The chunk's position in the grid file
-		unsigned file_size = 0;
+		unsigned tile_count = 0;
+		unsigned tile_index = 0; // The chunk's position in the grid file
 	};
 
-	TileGrid(glm::uvec2 _tile_size = glm::uvec2(1), glm::uvec2 _chunk_size = glm::uvec2(32), unsigned _chunk_slots = 9);
-	TileGrid(std::string path, glm::uvec2 _tile_size = glm::uvec2(1), glm::uvec2 _chunk_size = glm::uvec2(32), unsigned _chunk_slots = 4);
+	TileGrid(glm::uvec2 tile_size = glm::uvec2(1), glm::uvec2 chunk_size = glm::uvec2(32), unsigned chunk_slots = 9);
+	TileGrid(std::string path, unsigned chunk_slots = 9);
 
 	// This grids chunks, declared by a map file and loaded in when needed
 	std::map<unsigned, Chunk*> chunk_slots;
 
 	glm::uvec2 getChunkSize();
+	glm::uvec2 getTileSize();
 
-	Chunk* addChunk(glm::ivec2 position, std::multimap<unsigned, glm::ivec2> tiles, unsigned file_pos = 0, unsigned file_size = 0);
+	Chunk* addChunk(glm::ivec2 position, TileSet tiles, unsigned file_pos = 0, unsigned file_size = 0);
 	Chunk* getChunk(glm::vec2 position);
 	Chunk* getChunkFromGridPos(glm::ivec2 chunk_pos);
+	glm::ivec2 calcChunkPos(glm::vec2 world_pos);
 
-	Chunk* addTileToGrid(glm::vec2 position, unsigned tileID);
-	void addTileToChunk(glm::ivec2 position, unsigned tileID, Chunk* chunk);
+	Chunk* addTileToGrid(glm::vec2 position, unsigned tileID, unsigned attribs = NONE);
+	void addTileToChunk(Chunk* chunk, glm::ivec2 position, unsigned tileID, unsigned attribs = NONE);
 
 	unsigned addTexMap(TexMap);
+	unsigned addTexMap(TexMap map, unsigned offset);
  
 	void updateVBO(unsigned);
 	void updateChunk(Chunk* chunk);
 	void markChunk(Chunk* chunk);
 	void drawChunks(Shader& shader); // Draws tiles from the currently loaded chunks using data in the IBO (from updateTiles())
 
-	bool openFile(std::string); // Reads texture data and chunk positions into the grid
-	void loadChunk(Chunk* chunk);
-	void loadChunksFromPos(std::vector<glm::ivec2> positions); // Reads tiles from a chunk in the file opened by openFile
+	bool loadFile(std::string); // Reads texture data and chunk positions into the grid
 	void saveFile(std::string); // Saves all chunks and texture data to a readable map file
 
 private:

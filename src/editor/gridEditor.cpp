@@ -7,21 +7,34 @@ glm::vec2 Editor::screen_to_frame;
 Camera2d* Editor::camera;
 TileGrid* Editor::grid;
 unsigned Editor::selected;
+unsigned Editor::current_attribs;
 glm::vec2 Editor::drag_last = glm::vec2(0);
+bool Editor::dont_place = true;
 
 void Editor::init() {
 	input_map.setFramebufferCallback(updateFramebuffer);
-	input_map.setMouseButtonCallback(mouseButton);
 	input_map.setScrollCallback(scrollZoom);
 
 	input_map.addBind("drag", [](){
 		glm::vec2 pos = mouseToWorld(camera) - camera->position; // Find the position of the cursor independent of the camera position
 		glm::vec2 offset = pos - drag_last; // The amount to move the camera
+		if(offset.x > place_threshold || offset.x < -place_threshold || offset.y > place_threshold || offset.y < -place_threshold)
+			dont_place = true;
 
 		camera->position -= offset;
 		
 		drag_last = pos;
-	}, GLFW_MOUSE_BUTTON_3, GLFW_PRESS, MOUSE_B);
+	}, GLFW_MOUSE_BUTTON_1, GLFW_PRESS, MOUSE_B);
+
+	input_map.addBind("placeTile", [](){
+		if(!dont_place)
+			grid->updateChunk(grid->addTileToGrid(mouseToWorld(camera), selected, current_attribs));
+		dont_place = false;
+	}, GLFW_MOUSE_BUTTON_1, INPUT_ONCE_RELEASE, MOUSE_B);
+
+	input_map.addBind("fillChunk", [](){
+		fillChunk();
+	}, GLFW_MOUSE_BUTTON_2, INPUT_ONCE_RELEASE, MOUSE_B);
 
 	input_map.addBind("drag_release", [](){
 		drag_last = mouseToWorld(camera) - camera->position;
@@ -29,23 +42,109 @@ void Editor::init() {
 
 	input_map.addBind("nextTile", [](){
 		selected++;
-	}, GLFW_KEY_PERIOD);
+	}, GLFW_KEY_1, INPUT_ONCE);
 
 	input_map.addBind("prevTile", [](){
-		if((selected - 1) >= 0)
+		if(selected != 0)
 			selected--;
-	}, GLFW_KEY_COMMA);
+	}, GLFW_KEY_2, INPUT_ONCE);
+
+	input_map.addBind("rotateTile", [](){
+		// NOTE: this could be much simplified by adding a ROTATE_270, but I like showing off bitwise flags hehe
+		// TODO: add a ROTATE_270
+		if(!(current_attribs & ROTATE_90)) { // IF there is no ROTATE_90, add one
+			current_attribs |= ROTATE_90; 
+		} else if(!(current_attribs & ROTATE_180)) { // IF there is 90 BUT no 180, add 180 and remove 90
+			current_attribs |= ROTATE_180;
+			current_attribs ^= ROTATE_90;
+		} else { // IF there is 90 AND 180, remove both
+			current_attribs ^= ROTATE_90 | ROTATE_180;
+		}
+	}, GLFW_KEY_R, INPUT_ONCE);
+
+	input_map.addBind("flipTileH", [](){
+		if(!(current_attribs & REFLECT_H)) {
+			current_attribs |= REFLECT_H;
+		} else {
+			current_attribs ^= REFLECT_H;
+		}
+	}, GLFW_KEY_T, INPUT_ONCE);
+
+	input_map.addBind("flipTileV", [](){
+		if(!(current_attribs & REFLECT_V)) {
+			current_attribs |= REFLECT_V;
+		} else {
+			current_attribs ^= REFLECT_V;
+		}
+	}, GLFW_KEY_Y, INPUT_ONCE);
+
+	input_map.addBind("save", [](){
+		grid->saveFile("tests/gridtest.mp");
+	}, GLFW_KEY_S, INPUT_ONCE);
+
+	input_map.addBind("load", [](){
+		grid->loadFile("tests/gridtest.mp");
+	}, GLFW_KEY_A, INPUT_ONCE);
 }
 
-void Editor::mouseButton(GLFWwindow* win, int button, int action) {
-	static bool press;
-	if(button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && !press) {
-		grid->updateChunk(grid->addTileToGrid(mouseToWorld(camera), selected));
-		press = true;
+void Editor::show_gui() {
+	ImGui::Begin("Grid Editor");
+
+	static int buffer;
+	ImGui::InputInt("Tile id", &buffer, 1);
+	if(buffer < 0)
+		buffer = 0;
+	selected = buffer;
+
+	static int sel_rotation = 0;
+	ImGui::Combo("Tile Rotation", &sel_rotation, " 0\0 90\0 180\0 270\0\0");
+
+	static bool toggle_mirror_h = false;
+	ImGui::Checkbox("Mirror Horizontally", &toggle_mirror_h);
+	static bool toggle_mirror_v = false;
+	ImGui::Checkbox("Mirror Vertically", &toggle_mirror_v);
+
+	static std::string input_path;
+	ImGui::InputText("Map file path", &input_path);
+	if(ImGui::Button("Save"))
+		grid->saveFile(input_path);
+	if(ImGui::Button("Load"))
+		grid->loadFile(input_path);
+
+
+	switch (sel_rotation) {
+		case 0:
+			current_attribs = 0;
+			break;
+		case 1:
+			current_attribs = ROTATE_90;
+			break;
+		case 2:
+			current_attribs = ROTATE_180;
+			break;
+		case 3:
+			current_attribs = ROTATE_180 | ROTATE_90;
+			break;
 	}
-	if(button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
-		press = false;
+
+	if(toggle_mirror_h)
+		current_attribs |= REFLECT_H;
+	if(toggle_mirror_v)
+		current_attribs |= REFLECT_V;
+
+	ImGui::End();
+}
+
+void Editor::fillChunk() {
+	TileGrid::TileSet tiles;
+	for(unsigned i = 0; i < grid->getChunkSize().x; i++) {
+		for(unsigned j = 0; j < grid->getChunkSize().y; j++) {
+			tiles.insert({ selected, glm::ivec2(i, j), NONE });
+		}
 	}
+	TileGrid::Chunk* c = grid->getChunk(mouseToWorld(camera));
+	c->tiles = tiles;
+	grid->updateChunk(c);
 }
 
 void Editor::scrollChangeTile(GLFWwindow* window, double x, double y) {
@@ -55,8 +154,8 @@ void Editor::scrollChangeTile(GLFWwindow* window, double x, double y) {
 
 void Editor::scrollZoom(GLFWwindow* window, double x, double y) {
 	camera->fov += y * -0.5;
-	if(camera->fov > 10)
-		camera->fov = 10;
+	if(camera->fov > 30)
+		camera->fov = 30;
 	if(camera->fov < .5)
 		camera->fov = .5;
 }

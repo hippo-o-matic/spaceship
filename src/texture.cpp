@@ -100,6 +100,26 @@ std::vector<glm::vec2> TexMap::getTileCoords(unsigned index) {
 	return texcoords;
 }
 
+std::vector<glm::vec2> TexMap::getTileBasis(unsigned index) {
+	// Get texcoords for these tiles
+	// Find the row and column the index points to
+	int column = index % columns;
+	int row = index / columns;
+	
+	// Find the first texture coordinate
+	glm::vec2 BL = glm::vec2(
+		column * (float)tile_width / (float)texture.width,
+		row * (float)tile_height / (float)texture.height
+	);
+
+	std::vector<glm::vec2> texcoords = {
+		BL, // Bottom left
+		glm::vec2(BL.x + (float)tile_width / (float)texture.width, BL.y + (float)tile_height / (float)texture.height),// Top Right
+	};
+
+	return texcoords;
+}
+
 Texture TexMap::getTileTexture(unsigned index) {
 	std::vector<glm::vec2> tcoords = getTileCoords(index);
 	return Texture {
