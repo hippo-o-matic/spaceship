@@ -1,15 +1,15 @@
 #include "sprite.h"
 
-Sprite::Sprite(std::string image_path, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(_pos, _rot, _scl) {
-	mesh = Primitive::rect(1, 1);
+Sprite::Sprite(std::string id, std::string image_path, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(id, _pos, _rot, _scl) {
+	mesh = Primitive::rect();
 	texture = loadTexture(image_path);
 
 	init_buffers();
 }
 
-Sprite::Sprite(Texture tex, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(_pos, _rot, _scl) {
+Sprite::Sprite(std::string id, Texture tex, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(id, _pos, _rot, _scl) {
 	texture = tex;
-	mesh = Primitive::rect(1, 1, 0, 0, 0, tex.basis);
+	mesh = Primitive::rect(glm::vec2(1), glm::vec2(0), NONE, 0, tex.basis);
 
 	init_buffers();
 }

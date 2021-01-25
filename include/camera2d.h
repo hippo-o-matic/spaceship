@@ -26,7 +26,7 @@ public:
 	unsigned int* display_height;
 	unsigned int* display_width;
 
-	Camera2d(glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0, PROJ_TYPE _projection = ORTHO);
+	Camera2d(std::string id, glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0, PROJ_TYPE _projection = ORTHO);
 	
 	glm::mat4 getViewMatrix();
 	glm::mat4 getProjectionMatrix();

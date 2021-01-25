@@ -6,10 +6,9 @@
 class ChunkLoader : public Object2d {
 public:
 	TileGrid* grid;
-	unsigned radius;
+	int radius;
 
-	ChunkLoader(TileGrid* grid, unsigned radius);
-	ChunkLoader(Object2d* parent, TileGrid* grid, unsigned radius);
+	ChunkLoader(std::string id, TileGrid* grid, unsigned radius);
 
 	void loadChunksSquare();
 

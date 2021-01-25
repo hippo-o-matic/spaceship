@@ -9,16 +9,17 @@
 class Object2d : public Object {
 public:
 	Object2d(
+		std::string _id,
 		glm::vec2 _pos = default_pos,
 		float _rot = default_rot,
 		glm::vec2 _scl = default_scl
 	);
-	Object2d(
-		Object2d* _parent,
-		glm::vec2 _pos = default_pos,
-		float _rot = default_rot,
-		glm::vec2 _scl = default_scl
-	);
+	// Object2d(
+	// 	Object2d* _parent,
+	// 	glm::vec2 _pos = default_pos,
+	// 	float _rot = default_rot,
+	// 	glm::vec2 _scl = default_scl
+	// );
 
 	Object2d(Json::Value j);
 

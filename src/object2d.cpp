@@ -1,12 +1,13 @@
 #include "object2d.h"
 
-Object2d::Object2d(glm::vec2 _pos, float _rot, glm::vec2 _scl) : 
-position(_pos), rotation(_rot), scale(_scl) {}
+Object2d::Object2d(std::string _id, glm::vec2 _pos, float _rot, glm::vec2 _scl) : 
+Object(_id), position(_pos), rotation(_rot), scale(_scl) {}
 
-Object2d::Object2d(Object2d* _parent, glm::vec2 _pos, float _rot, glm::vec2 _scl) : 
-position(_pos), rotation(_rot), scale(_scl) {
-	parent = _parent;
-}
+// Object2d::Object2d(Object2d* _parent, glm::vec2 _pos, float _rot, glm::vec2 _scl) : 
+// position(_pos), rotation(_rot), scale(_scl) {
+// 	parent = _parent;
+// 	parent.move(std::make_unique)
+// }
 
 Object2d::Object2d(Json::Value j) : Object(j) {
 	Json::Value jPos = j["pos"];

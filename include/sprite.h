@@ -13,13 +13,16 @@
 
 class Sprite : public Object2d {
 public:
-	Sprite(std::string,
+	Sprite(
+		std::string id,
+		std::string path,
 		glm::vec2 _pos = glm::vec2(0),
 		double _rot = 0.0,
 		glm::vec2 _scl = glm::vec2(1)
 	);
 
 	Sprite(
+		std::string id,
 		Texture tex,
 		glm::vec2 _pos = glm::vec2(0),
 		double _rot = 0.0,

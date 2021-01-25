@@ -1,6 +1,6 @@
 #include "object.h"
 
-Object::Object() {}
+Object::Object(std::string _id) : id(_id) {}
 
 Object::Object(Json::Value j) {
 	this->id = j.get("id", "").asString();
@@ -47,14 +47,14 @@ void Object::operator-=(Object::ptr& o) {
 
 // Returns a refrence to the specified element (a unique pointer), casted to type T.
 // This allows whatever method is to use the values of the original object type, not just Object's values
-template<class T> std::unique_ptr<T>& Object::operator[](size_t index) {
-	return dynamic_cast<T&>(*components.at(index)); 
+Object::ptr& Object::operator[](size_t index) {
+	return components.at(index); 
 }
 
 // Same as above, but first searches for the component by id
-template<class T> std::unique_ptr<T>& Object::operator[](std::string id) { 
-	size_t index = std::find_if(components.begin(), components.end(), [id](const Object::ptr& o) -> bool { return o->id == id; });
-	return dynamic_cast<T&>(*components.at(index)); // Try dynamic_cast<unique<T>>& if breaks
+Object::ptr& Object::operator[](std::string id) { 
+	auto index = std::find_if(components.begin(), components.end(), [id](const Object::ptr& o) -> bool { return o->id == id; });
+	return *index; // Try dynamic_cast<unique<T>>& if breaks
 }
 
 void Object::createComponents(Json::Value items) {

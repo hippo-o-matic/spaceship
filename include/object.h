@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <streambuf>
 
 struct ObjectCastException : public std::exception {
     std::string type;
@@ -34,7 +35,7 @@ class Object {
 public:
     typedef std::unique_ptr<Object> ptr;
 
-	Object();
+	Object(std::string id);
 
 	Object(Json::Value);
 
@@ -49,7 +50,7 @@ public:
 
     // Moves an object from one parent into another (Destination << Input)
     template<class T>
-    void move(std::unique_ptr<T>& o);
+    void moveRef(std::unique_ptr<T>& o);
 
     template<class T>
     void move(std::unique_ptr<T> o);
@@ -57,8 +58,8 @@ public:
     void operator+=(std::vector<Object::ptr> &o_vec); // Move a vector of objects from one parent to another
 	void operator-=(Object::ptr &o); // Remove an object from an object's components
 
-    template<class T> std::unique_ptr<T>& operator[](size_t index); // Operator that returns a component in this object's vector by index
-    template<class T> std::unique_ptr<T>& operator[](std::string id); // Operator that returns the component in this object's vector that matches the id
+    Object::ptr& operator[](size_t index); // Operator that returns a component in this object's vector by index
+    Object::ptr& operator[](std::string id); // Operator that returns the component in this object's vector that matches the id
     
     template<class T> T* as(); // Returns a pointer to the object as type T, if the object wasn't originally T, throws an ObjectCastException
     
@@ -110,7 +111,7 @@ private:
 
 
 template<class T>
-void Object::move(std::unique_ptr<T>& o) {
+void Object::moveRef(std::unique_ptr<T>& o) {
     o->parent = this;
     components.push_back(std::move(o));
 }

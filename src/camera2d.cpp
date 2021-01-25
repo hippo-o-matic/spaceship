@@ -1,6 +1,6 @@
 #include "camera2d.h"
 
-Camera2d::Camera2d(glm::vec2 position, float rotation, PROJ_TYPE _projection) : Object2d(position, rotation) {
+Camera2d::Camera2d(std::string id, glm::vec2 position, float rotation, PROJ_TYPE _projection) : Object2d(id, position, rotation) {
 	projection = _projection;
 
 	// Set sane values for zoom level
