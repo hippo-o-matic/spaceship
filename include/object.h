@@ -46,15 +46,14 @@ public:
 
     /// Component handling
 
-	void operator+=(Object::ptr &o); // Move an object from one parent to another
-
     // Moves an object from one parent into another (Destination << Input)
     template<class T>
-    void moveRef(std::unique_ptr<T>& o);
+    void takeFromRef(std::unique_ptr<T>& o);
 
     template<class T>
-    void move(std::unique_ptr<T> o);
+    void take(std::unique_ptr<T> o);
 
+    void operator+=(Object::ptr &o); // Move an object from one parent to another
     void operator+=(std::vector<Object::ptr> &o_vec); // Move a vector of objects from one parent to another
 	void operator-=(Object::ptr &o); // Remove an object from an object's components
 
@@ -81,7 +80,9 @@ class ObjFactory {
     typedef std::map<std::string, std::function<Object::ptr(Json::Value)>> map_type;
 
 public:
-    static Object::ptr createObject(std::string const& s, Json::Value json = Json::Value()); // Creates a registered object and returns its unique pointer
+    // template<class T, typename... Args>
+    // static Object::ptr newObj(Args...);
+    static Object::ptr createObjectJson(std::string const& s, Json::Value json = Json::Value()); // Creates a registered object and returns its unique pointer
 
 	template<class T>
 	static bool const registerType(const char* name) {
@@ -99,6 +100,10 @@ private:
 * telabrium_obj_reg: a trick using static initialization order to register the type before main()*/
 #define REGISTER_OBJECT_TYPE(NAME) inline static bool telabrium_obj_reg = ObjFactory::registerType<NAME>(#NAME)
 
+template<class T, typename... Args>
+static Object::ptr newObj(Args... args) {
+    return std::make_unique<T>(args...);
+}
 
 class BlankObject : public Object {
 public:
@@ -111,13 +116,13 @@ private:
 
 
 template<class T>
-void Object::moveRef(std::unique_ptr<T>& o) {
+void Object::takeFromRef(std::unique_ptr<T>& o) {
     o->parent = this;
     components.push_back(std::move(o));
 }
 
 template<class T>
-void Object::move(std::unique_ptr<T> o) {
+void Object::take(std::unique_ptr<T> o) {
     o->parent = this;
     components.push_back(std::move(dynamic_unique_cast<T, Object>(std::move(o))));
 }

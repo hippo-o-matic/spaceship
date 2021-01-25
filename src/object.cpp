@@ -59,13 +59,13 @@ Object::ptr& Object::operator[](std::string id) {
 
 void Object::createComponents(Json::Value items) {
 	for(unsigned i = 0; i < items.size(); i++) {
-		Object::ptr o = ObjFactory::createObject(items[i]["type"].asString(), items[i]);
+		Object::ptr o = ObjFactory::createObjectJson(items[i]["type"].asString(), items[i]);
 		o->parent = this;
 		components.push_back(std::move(o));
 	}
 }
 
-Object::ptr ObjFactory::createObject(std::string const& s, Json::Value json) {
+Object::ptr ObjFactory::createObjectJson(std::string const& s, Json::Value json) {
 	ObjFactory::map_type::iterator it = getMap()->find(s); // Find the creation function by key
 	if(it == getMap()->end()) { // Check if it exists
 		log("Could not find object type \"" + s + "\", type not registered", ERR);
