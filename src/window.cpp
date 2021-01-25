@@ -3,6 +3,7 @@
 unsigned int SCR_WIDTH = 1280;
 unsigned int SCR_HEIGHT = 720;
 Input window_input;
+Input imgui_input;
 
 GLFWwindow* init_main_window() {
 	// glfw: initialize and configure
@@ -27,6 +28,7 @@ GLFWwindow* init_main_window() {
 	}
 
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1); // Enable vsync
 
 	// Set glfw callbacks
 	window_input.setFramebufferCallback(framebuffer_size_callback);
@@ -41,6 +43,36 @@ GLFWwindow* init_main_window() {
 	}
 	
 	return window;
+}
+
+ImGuiIO* init_imGui(GLFWwindow* window) {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO* io = &ImGui::GetIO();
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(window, false);
+	ImGui_ImplOpenGL3_Init("#version 330 core");
+
+	io->Fonts->AddFontFromFileTTF("tests/fonts/Roboto-Medium.ttf", 16.0f);
+	
+	imgui_input.setKeyCallback(ImGui_ImplGlfw_KeyCallback);
+	imgui_input.setMouseButtonCallback(ImGui_ImplGlfw_MouseButtonCallback);
+	imgui_input.setScrollCallback(ImGui_ImplGlfw_ScrollCallback);
+	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback); // TODO: maybe make input support char callbacks, dont need it right now
+	imgui_input.activate();
+
+	return io;
+}
+
+void cleanup(GLFWwindow* window) {
+	ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+	glfwDestroyWindow(window);
+    glfwTerminate();
 }
 
 // executed when the window is resized

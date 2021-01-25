@@ -15,11 +15,12 @@ enum INPUT_BIND_TYPE {
     MOUSE_B
 };
 
-enum INPUT_AC {
-    RELEASE,
-    PRESS,
-    REPEAT,
-    ONCE
+enum INPUT_ACTION {
+    INPUT_RELEASE,
+    INPUT_PRESS,
+    INPUT_REPEAT,
+    INPUT_ONCE,
+    INPUT_ONCE_RELEASE
 };
 
 // A class for setting up input binds, assigning keys to them, and remmaping those keys through config files
@@ -67,19 +68,29 @@ public:
     void editBindFunc(const char* name, std::function<void()> func);
     void editBindKey(const char* name, int key, int action = -2);
 
-	void setKeyCallback(std::function<void(GLFWwindow*,int, int)>);
-	void setMouseButtonCallback(std::function<void(GLFWwindow*,int, int)>);
+	void setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)>);
+	void setMouseButtonCallback(std::function<void(GLFWwindow*, int, int, int)>);
     void setMouseCallback(std::function<void(GLFWwindow*, double, double)>); // The actions performed by the mouse for this profile
     void setScrollCallback(std::function<void(GLFWwindow*, double, double)>); // The actions performed by the scroll wheel for this profile
 	void setFocusCallback(std::function<void(GLFWwindow*, bool)>); // The actions performed whenever the window gains or loses focus
     void setFramebufferCallback(std::function<void(GLFWwindow*, int, int)>);
 
+    static bool block_keys;
+    static bool block_mouse_buttons;
+    static bool block_mouse;
+    static bool block_scroll;
+
     void process(GLFWwindow*);
     static void processActive(GLFWwindow*);
 
+    // Activates the profile, enabling its callbacks and tracking its binds
     void activate();
+    // Deactivates the profile
     void deactivate();
-    // void activate_solo();
+    // Activates the profile, blocking all other input callbacks and binds (excluding focus and framebuffer callbacks)
+    void activate_solo();
+    // Removes the profile currently in solo, enabling all previously activated profiles
+    static void undo_solo();
 
 	static void assignCallbacks(GLFWwindow* window); // Shortcut to give our callback functions to glfw for <window>>
 
@@ -87,8 +98,8 @@ private:
     std::vector<bind> binds; // The binds this profile will track
 	
 	// Profile callback functions
-	std::function<void(GLFWwindow*,int, int)> key_c; // Profile key callback
-	std::function<void(GLFWwindow*,int, int)> button_c; // Profile mouse button callback
+	std::function<void(GLFWwindow*, int, int, int, int)> key_c; // Profile key callback
+	std::function<void(GLFWwindow*, int, int, int)> button_c; // Profile mouse button callback
     std::function<void(GLFWwindow*, double, double)> mouse_c; // Profile mouse callback 
     std::function<void(GLFWwindow*, double, double)> scroll_c; // Profile scroll callback 
 	std::function<void(GLFWwindow*, bool)> focus_c; // Profile focus callback
@@ -105,6 +116,7 @@ private:
 	static bool focused; // Whether or not the window is focused
 
     static std::vector<Input*> active_profiles; // The list of profiles to process
+    static Input* solo_profile;
 
     const char* config_file_prefix = (std::string(CONFIG_PATH) + "controls/").c_str();
     std::string config_file_path = "default";
