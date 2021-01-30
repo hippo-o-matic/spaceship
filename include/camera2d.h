@@ -31,8 +31,5 @@ public:
 	glm::mat4 getViewMatrix();
 	glm::mat4 getProjectionMatrix();
 	float getAspectRatio();
-	
-	glm::vec2 up();
-	glm::vec2 right();
 };
 

@@ -29,7 +29,10 @@ Object2d::~Object2d() {}
 
 
 glm::vec2 Object2d::getWorldPos() {
-	return glm::vec2(getWorldTransform()[3]);
+	if(!prevent_inherit_pos)
+		return glm::vec2(getWorldTransform()[3]);
+	else
+		return position;
 }
 
 glm::vec2 Object2d::setWorldPos(glm::vec2 dest) {
@@ -38,7 +41,10 @@ glm::vec2 Object2d::setWorldPos(glm::vec2 dest) {
 
 
 float Object2d::getWorldRot() {
-	return degreeFromMat4(getWorldTransform());
+	if(!prevent_inherit_rot)
+		return degreeFromMat4(getWorldTransform());
+	else
+		return rotation;
 }
 
 float Object2d::setWorldRot(float dest) {
@@ -62,11 +68,14 @@ float Object2d::rotate(float in) {
 }
 
 glm::vec2 Object2d::getWorldScl() {
-	glm::mat4 transform = getWorldTransform();
-	return glm::vec2(
-		glm::length(transform[0]),
-		glm::length(transform[1])
-	);
+	if(!prevent_inherit_scl) {
+		glm::mat4 transform = getWorldTransform();
+		return glm::vec2(
+			glm::length(transform[0]),
+			glm::length(transform[1])
+		);
+	} else
+		return scale;
 }
 
 glm::vec2 Object2d::setWorldScl(glm::vec2 dest) {
@@ -163,6 +172,20 @@ glm::mat4 Object2d::transformBy(glm::mat4 in) {
 	return setTransform(in * getTransform());
 }
 
+
+glm::vec2 Object2d::up() {
+	return glm::vec2(
+		cos(glm::radians(rotation + 90.f)), 
+		sin(glm::radians(rotation + 90.f))
+	);
+}
+
+glm::vec2 Object2d::right() {
+	return glm::vec2(
+		cos(glm::radians(rotation)), 
+		sin(glm::radians(rotation))
+	);
+}
 
 // void Object2d::updateVectors() {
 // 	// Potentially have this as a static? idk

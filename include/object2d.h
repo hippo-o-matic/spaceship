@@ -29,6 +29,10 @@ public:
 	float rotation;
 	glm::vec2 scale;
 	int layer = 0;
+
+	bool prevent_inherit_pos = false;
+	bool prevent_inherit_rot = false;
+	bool prevent_inherit_scl = false;
 	
 	glm::vec2 getWorldPos();
 	glm::vec2 setWorldPos(glm::vec2);
@@ -53,8 +57,8 @@ public:
 	// glm::mat4 setTransform(glm::mat4);
 
 	// Directional vectors
-	// glm::vec2 forward;
-	// glm::vec2 right;
+	glm::vec2 up();
+	glm::vec2 right();
 
 	// // TODO: not a fan of having to call a function as values can become outdated, maybe use getters and setters?
 	// void updateVectors();

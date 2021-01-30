@@ -48,43 +48,6 @@ void Editor::init() {
 		if(selected != 0)
 			selected--;
 	}, GLFW_KEY_2, INPUT_ONCE);
-
-	input_map.addBind("rotateTile", [](){
-		// NOTE: this could be much simplified by adding a ROTATE_270, but I like showing off bitwise flags hehe
-		// TODO: add a ROTATE_270
-		if(!(current_attribs & ROTATE_90)) { // IF there is no ROTATE_90, add one
-			current_attribs |= ROTATE_90; 
-		} else if(!(current_attribs & ROTATE_180)) { // IF there is 90 BUT no 180, add 180 and remove 90
-			current_attribs |= ROTATE_180;
-			current_attribs ^= ROTATE_90;
-		} else { // IF there is 90 AND 180, remove both
-			current_attribs ^= ROTATE_90 | ROTATE_180;
-		}
-	}, GLFW_KEY_R, INPUT_ONCE);
-
-	input_map.addBind("flipTileH", [](){
-		if(!(current_attribs & REFLECT_H)) {
-			current_attribs |= REFLECT_H;
-		} else {
-			current_attribs ^= REFLECT_H;
-		}
-	}, GLFW_KEY_T, INPUT_ONCE);
-
-	input_map.addBind("flipTileV", [](){
-		if(!(current_attribs & REFLECT_V)) {
-			current_attribs |= REFLECT_V;
-		} else {
-			current_attribs ^= REFLECT_V;
-		}
-	}, GLFW_KEY_Y, INPUT_ONCE);
-
-	input_map.addBind("save", [](){
-		grid->saveFile("tests/gridtest.mp");
-	}, GLFW_KEY_S, INPUT_ONCE);
-
-	input_map.addBind("load", [](){
-		grid->loadFile("tests/gridtest.mp");
-	}, GLFW_KEY_A, INPUT_ONCE);
 }
 
 void Editor::show_gui() {

@@ -62,8 +62,12 @@ void Input::addBind(const char* name, std::function<void()> func, int key, int a
 	}
 
 	// If the bind doesn't already exist, push a new one to the binds vector
-	if(std::find_if(binds.begin(), binds.end(), [name](bind b){ return b.name == name; }) == binds.end()) { // Find the bind by name
+	auto find_bind = std::find_if(binds.begin(), binds.end(), [name](bind b){ return b.name == name; });
+	if(find_bind == binds.end()) { // Find the bind by name
 		binds.push_back({name, func, key, action, type});
+		
+		if(action == INPUT_ONCE_RELEASE)
+			std::prev(binds.end())->block = true; // This bind should only activate on release, so block it initally until a press is recieved
 	} else {
 		log("A bind with the id \"" + std::string(name) + "\" already exists", WARN);
 	}

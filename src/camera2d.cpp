@@ -12,8 +12,8 @@ Camera2d::Camera2d(std::string id, glm::vec2 position, float rotation, PROJ_TYPE
 
 // Returns the view matrix
 glm::mat4 Camera2d::getViewMatrix(){
-	glm::mat4 rotate = glm::rotate(glm::mat4(1), glm::radians(-this->rotation), Front); // Rotate
-	glm::mat4 pos = glm::translate(glm::mat4(1), glm::vec3(position, layer)); // And finally translate by position
+	glm::mat4 rotate = glm::rotate(glm::mat4(1), glm::radians(-getWorldRot()), Front); // Rotate
+	glm::mat4 pos = glm::translate(glm::mat4(1), glm::vec3(getWorldPos(), layer)); // And finally translate by position
 	
 	return rotate * glm::inverse(pos);
 }
@@ -29,18 +29,4 @@ glm::mat4 Camera2d::getProjectionMatrix(){
 
 float Camera2d::getAspectRatio() {
 	return (float)(*display_width) / (float)(*display_height);
-}
-
-glm::vec2 Camera2d::up() {
-	return glm::vec2(
-		cos(glm::radians(rotation + 90.f)), 
-		sin(glm::radians(rotation + 90.f))
-	);
-}
-
-glm::vec2 Camera2d::right() {
-	return glm::vec2(
-		cos(glm::radians(rotation)), 
-		sin(glm::radians(rotation))
-	);
 }

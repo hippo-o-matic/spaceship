@@ -12,4 +12,7 @@
 #include "game/tileGrid.h"
 #include "editor/gridEditor.h"
 #include "game/cloader.h"
+#include "game/ship.h"
+
+extern bool show_debug_menu;
 TileGrid gridTest();

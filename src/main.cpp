@@ -1,5 +1,7 @@
 #include "main.h"
 
+bool show_debug_menu = true;
+
 int main() {
 	GLFWwindow* window = init_main_window();
 	ImGuiIO* imgui_io = init_imGui(window);
@@ -9,6 +11,7 @@ int main() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	int appstate = 1;
+	bool show_debug_menu = true;
 
 	float deltaTime = 0.0f;
 	float lastFrame = 0.0f;
@@ -17,53 +20,75 @@ int main() {
 	Editor::init();
 	Editor::input_map.activate();
 
-	Camera2d cam("main_camera");
-	cam.display_height = &SCR_HEIGHT;
-	cam.display_width = &SCR_WIDTH;
+	Object::ptr cam_temp = newObj<Camera2d>("player_camera");
+	Camera2d* cam = cam_temp->as<Camera2d>();
+	cam->display_height = &SCR_HEIGHT;
+	cam->display_width = &SCR_WIDTH;
+	cam->prevent_inherit_rot = true;
 
 	Shader shade("tests/shader/sprite.vs", "tests/shader/sprite.fs");
 	Shader bg("tests/shader/bg.vs", "tests/shader/sprite.fs");
 
 	// Sprite background("tests/img/space.png", glm::vec2(0), 0, glm::vec2(5));
 
-	Sprite test("test", "tests/img/tex.png");
-	Sprite vest("vest", "tests/img/gex.png", glm::vec2(1, 1));
-	vest.mesh = Primitive::rect(glm::vec2(1), glm::vec2(0), ROTATE_90 | ROTATE_180);
-	vest.updateMesh();
-	vest.layer = 1;
+	Sprite test("test", "tests/img/gex.png");
+	Sprite forward("vest", "tests/img/gex.png");
+	forward.scale = glm::vec2(2);
+	Sprite vel("aa", "tests/img/tex.png", glm::vec2(2));
+	vel.scale = glm::vec2(0.2);
 
 	TileGrid grid = gridTest();
 	Editor::grid = &grid;
-	Editor::camera = &cam;
-	cam.move(std::make_unique<ChunkLoader>("chunk_loader", &grid, 1));
+	Editor::camera = cam;
+	cam->take(newObj<ChunkLoader>("chunk_loader", &grid, 1));
+
+	Ship::ship_classes.push_back({
+		"testclass",
+		"tests/textures/ship.png",
+		5,
+		3,
+		100,
+		0
+	});
+
+	Ship player("player", "testclass");
+	player.take(newObj<ChunkLoader>("chunk_loader", &grid, 1));
+	player.takeFromRef(cam_temp);
 	
 	//////////////////////////////////////////////
 
 	Input control;
 	control.activate();
-	float speed = 5;
-	control.addBind("speen", 
-		[&cam, &deltaTime, &speed](){cam.rotate(20 * deltaTime);},
-		GLFW_KEY_F
+	control.addBind("debug", 
+		[&show_debug_menu](){show_debug_menu = !show_debug_menu; },
+		GLFW_KEY_GRAVE_ACCENT, INPUT_ONCE
 	);
 	control.addBind("down", 
-		[&cam, &deltaTime, speed](){cam.position -= speed * cam.up() * deltaTime;},
-		GLFW_KEY_DOWN
+		[&player](){player.thrust = -player.up();},
+		GLFW_KEY_S
 	);
 	control.addBind("up", 
-		[&cam, &deltaTime, speed](){cam.position += speed * cam.up() * deltaTime;},
-		GLFW_KEY_UP
+		[&player](){player.thrust = player.up();},
+		GLFW_KEY_W
 	);
 	control.addBind("left", 
-		[&cam, &deltaTime, speed](){cam.position -= speed * cam.right() * deltaTime;},
-		GLFW_KEY_LEFT
+		[&player](){player.angular_thrust = 1;},
+		GLFW_KEY_A
 	);
 	control.addBind("right", 
-		[&cam, &deltaTime, speed](){cam.position += speed * cam.right() * deltaTime;},
-		GLFW_KEY_RIGHT
+		[&player](){player.angular_thrust = -1;},
+		GLFW_KEY_D
+	);
+	control.addBind("boost", 
+		[&player](){player.ship_class.thrust_power = 6;},
+		GLFW_KEY_LEFT_SHIFT
+	);
+	control.addBind("unboost", 
+		[&player](){player.ship_class.thrust_power = 3;},
+		GLFW_KEY_LEFT_SHIFT, INPUT_RELEASE
 	);
 
-	bool imgui_window_state = true;
+	bool imgui_window_state = false;
 	// Main loop
 	while(appstate) {
 		if(glfwWindowShouldClose(window)) {
@@ -76,17 +101,15 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		forward.position = player.position;
+		vel.position = player.position + (2.f*player.thrust - (player.velocity / (player.ship_class.thrust_power * player.ship_class.mass))); 
+
 		// Calculate input
 		// See if imgui needs inputs
 		if(imgui_io->WantCaptureMouse || imgui_io->WantCaptureKeyboard)
 			imgui_input.activate_solo();
 		else
 			imgui_input.undo_solo();
-		
-		// Input::block_keys = imgui_io->WantCaptureKeyboard;
-		// Input::block_mouse = imgui_io->WantCaptureMouse;
-		// Input::block_mouse_buttons = imgui_io->WantCaptureMouse;
-		// Input::block_scroll = imgui_io->WantCaptureMouse;
 		
 		glfwPollEvents();
 		Input::processActive(window);
@@ -99,24 +122,37 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-
 		if (imgui_window_state)
             ImGui::ShowDemoWindow(&imgui_window_state);
 
-		Editor::show_gui();
+		if(show_debug_menu) {
+			Editor::show_gui();
 
-		shade.set("view", cam.getViewMatrix());
-		shade.set("projection", cam.getProjectionMatrix());
+			ImGui::Begin("Player");
+			ImGui::Text(("X: " + std::to_string(player.position.x)).c_str());
+			ImGui::Text(("Y: " + std::to_string(player.position.y)).c_str());
+			ImGui::Text(("VX: " + std::to_string(player.velocity.x)).c_str());
+			ImGui::Text(("VY: " + std::to_string(player.velocity.y)).c_str());
+			ImGui::Text(("AV: " + std::to_string(player.angular_velocity)).c_str());
+			ImGui::End();
+		}
+
+		shade.set("view", cam->getViewMatrix());
+		shade.set("projection", cam->getProjectionMatrix());
 	
-		bg.set("view", cam.getViewMatrix());
-		bg.set("projection", cam.getProjectionMatrix());
+		bg.set("view", cam->getViewMatrix());
+		bg.set("projection", cam->getProjectionMatrix());
 
-		cam["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
+		player["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
+
+		player.update(deltaTime);
+		player["sprite"]->as<Sprite>()->draw(shade);
 
 		// background.draw(bg);
 
 		test.draw(shade);
-		vest.draw(shade);
+		// forward.draw(shade);
+		vel.draw(shade);
 		grid.drawChunks(shade);
 
 		ImGui::Render();
