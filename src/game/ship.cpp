@@ -30,8 +30,10 @@ glm::vec2 safeNormal(glm::vec2 in) {
 
 void Ship::update(float deltaTime) {
 	glm::vec2 accel = (thrust * ship_class.thrust_power) / ship_class.mass;
+	float ang_accel = (angular_thrust * ship_class.turn_power) / ship_class.mass;
 	if(velocity != glm::vec2(0)) {
-		velocity += (2.f*thrust - (velocity / (ship_class.thrust_power * ship_class.mass))) * ship_class.thrust_power / ship_class.mass;
+		// velocity += (2.f*thrust - (velocity / (ship_class.thrust_power * ship_class.mass))) * ship_class.thrust_power / ship_class.mass;
+		velocity += 2.f * accel - velocity / (2.f * ship_class.mass); 
 	} else {
 		velocity += accel;
 	}
@@ -45,7 +47,7 @@ void Ship::update(float deltaTime) {
 	
 	
 
-	angular_velocity += (2.f * angular_thrust - std::clamp(angular_velocity, -1.f, 1.f)) * ship_class.turn_power / ship_class.mass;
+	angular_velocity += 2.f * ang_accel - angular_velocity / (2.f * ship_class.mass);;
 
 	if(abs(angular_velocity) < 0.5)
 		angular_velocity = 0;
