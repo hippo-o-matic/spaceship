@@ -18,7 +18,8 @@ struct Texture {
 	
 	int width, height; // Total width and height of this texture
 	// The texcoords that specify the top left and bottom right corners of the region that should be used as a texture
-	std::vector<glm::vec2> basis = { glm::vec2(0), glm::vec2(1) };
+	glm::vec2 basis_lower_left;
+	glm::vec2 basis_upper_right;
 
 	static std::vector<Texture> loaded; // Keeps track of all the textures we've loaded
 };

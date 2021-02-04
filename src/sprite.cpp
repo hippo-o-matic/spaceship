@@ -1,7 +1,6 @@
 #include "sprite.h"
 
 Sprite::Sprite(std::string id, std::string image_path, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(id, _pos, _rot, _scl) {
-	mesh = Primitive::rect();
 	texture = loadTexture(image_path);
 
 	init_buffers();
@@ -9,7 +8,7 @@ Sprite::Sprite(std::string id, std::string image_path, glm::vec2 _pos, double _r
 
 Sprite::Sprite(std::string id, Texture tex, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(id, _pos, _rot, _scl) {
 	texture = tex;
-	mesh = Primitive::rect(glm::vec2(1), glm::vec2(0), NONE, 0, tex.basis);
+	mesh = Primitive::rect(glm::vec2(1), glm::vec2(0)).setBasis(tex.basis_lower_left, tex.basis_upper_right);
 
 	init_buffers();
 }
@@ -44,7 +43,7 @@ void Sprite::init_buffers() {
 
 	// vertex positions
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2d), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2d), (void*)0);
 
 	// vertex texture coords
 	glEnableVertexAttribArray(1);

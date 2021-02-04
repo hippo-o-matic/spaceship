@@ -165,7 +165,7 @@ void TileGrid::initBuffers(unsigned slot_count) {
 	// use the same indicies
 	std::vector<unsigned> indices;
 	for(unsigned i = 0; i < chunk_size.x * chunk_size.y * 4; i+=4) {
-		std::vector<unsigned> rect_indices = Primitive::rect(glm::vec2(0), glm::vec2(0), NONE, i).indices;
+		std::vector<unsigned> rect_indices = Primitive::rect(glm::vec2(0), glm::vec2(0)).setIndexOffset(i).indices;
 		indices.insert(indices.end(), rect_indices.begin(), rect_indices.end());
 	}
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -177,7 +177,7 @@ void TileGrid::initBuffers(unsigned slot_count) {
 	);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribFormat(0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex2d, pos));
+	glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex2d, pos));
 	glVertexAttribBinding(0, 0);
 	
 	glEnableVertexAttribArray(1);
@@ -222,9 +222,12 @@ void TileGrid::updateVBO(unsigned VBO) {
 			continue;
 		}
 
-		Polygon tile_mesh = Primitive::rect(tile_size, tile->pos, tile->attribs, 0, tex->second.getTileBasis(tile->tileID - tex->first));
-		// rebaseTexCoords(tile_mesh.vertices, tex->second.getTileBasis(tile->tileID - tex->first));
-		// joinCoords(tile_mesh.vertices, tex->second.getTileCoords(tile->tileID - tex->first));
+		auto basis = tex->second.getTileBasis(tile->tileID - tex->first);
+		Polygon tile_mesh = Primitive::rect(tile_size, tile->pos)
+			.setOptions(tile->attribs)
+			.setBasis(basis[0], basis[1])
+			.regenTexCoords();
+
 		for(Vertex2d& vert : tile_mesh.vertices) {
 			vert.pos.x += chunk->pos.x * (int)chunk_size.x;
 			vert.pos.y += chunk->pos.y * (int)chunk_size.y;

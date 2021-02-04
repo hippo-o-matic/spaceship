@@ -29,7 +29,7 @@ public:
 		glm::vec2 _scl = glm::vec2(1)
 	);
 
-	Polygon mesh;
+	Polygon mesh = Primitive::rect();
 	Texture texture;
 
 	unsigned int VAO;

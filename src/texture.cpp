@@ -100,6 +100,7 @@ std::vector<glm::vec2> TexMap::getTileCoords(unsigned index) {
 	return texcoords;
 }
 
+// TODO[5]: Make this return not a vector, possibly a struct or a pointer passthrough
 std::vector<glm::vec2> TexMap::getTileBasis(unsigned index) {
 	// Get texcoords for these tiles
 	// Find the row and column the index points to
@@ -128,6 +129,7 @@ Texture TexMap::getTileTexture(unsigned index) {
 		texture.path,
 		texture.width,
 		texture.height,
-		{tcoords[0], tcoords[2]}
+		tcoords[0], 
+		tcoords[2]
 	};
 }

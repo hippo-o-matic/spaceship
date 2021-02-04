@@ -80,12 +80,12 @@ int main() {
 		GLFW_KEY_D
 	);
 	control.addBind("boost", 
-		[&player](){player.ship_class.thrust_power = 6;},
-		GLFW_KEY_LEFT_SHIFT
+		[&player](){player.ship_class.thrust_power += 3;},
+		GLFW_KEY_LEFT_SHIFT, INPUT_ONCE
 	);
 	control.addBind("unboost", 
-		[&player](){player.ship_class.thrust_power = 3;},
-		GLFW_KEY_LEFT_SHIFT, INPUT_RELEASE
+		[&player](){player.ship_class.thrust_power -= 3;},
+		GLFW_KEY_LEFT_SHIFT, INPUT_ONCE_RELEASE
 	);
 
 	bool imgui_window_state = false;
@@ -134,6 +134,8 @@ int main() {
 			ImGui::Text(("VX: " + std::to_string(player.velocity.x)).c_str());
 			ImGui::Text(("VY: " + std::to_string(player.velocity.y)).c_str());
 			ImGui::Text(("AV: " + std::to_string(player.angular_velocity)).c_str());
+			ImGui::SliderFloat("Mass", &player.ship_class.mass, 0.1, 50);
+			ImGui::SliderFloat("Power", &player.ship_class.thrust_power, 0, 10);
 			ImGui::End();
 		}
 
@@ -146,7 +148,6 @@ int main() {
 		player["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
 
 		player.update(deltaTime);
-		player["sprite"]->as<Sprite>()->draw(shade);
 
 		// background.draw(bg);
 
@@ -154,6 +155,7 @@ int main() {
 		// forward.draw(shade);
 		vel.draw(shade);
 		grid.drawChunks(shade);
+		player["sprite"]->as<Sprite>()->draw(shade);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
