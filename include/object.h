@@ -11,14 +11,14 @@
 #include <memory>
 #include <streambuf>
 
-struct ObjectCastException : public std::exception {
-    std::string type;
+struct ObjectCastException : public std::runtime_error {
+    ObjectCastException(std::string type = "") : 
+        runtime_error("Object does not inherit from class " + type) {}
+};
 
-    ObjectCastException(std::string _type = "") : type(_type) {}
-
-    const char* what() const throw() {
-        return ("Object does not inherit from class " + type).c_str();
-    }
+struct ObjectMissingException : public std::runtime_error {
+    ObjectMissingException(std::string id, std::string parent) : 
+        runtime_error("The appropriate object could not be found.\nid: \"" + id + "\"\nparent id: \"" + parent +"\"") {}
 };
 
 template<class In, class Out>
@@ -59,6 +59,11 @@ public:
 
     Object::ptr& operator[](size_t index); // Operator that returns a component in this object's vector by index
     Object::ptr& operator[](std::string id); // Operator that returns the component in this object's vector that matches the id
+
+    Object::ptr& get(std::string id); // Returns a refrence to an object component by matching the id
+
+    template<class T>
+    T& get(std::string id); // Equivalent to get(id)->as<T>() 
     
     template<class T> T* as(); // Returns a pointer to the object as type T, if the object wasn't originally T, throws an ObjectCastException
     
@@ -78,6 +83,11 @@ protected:
 // A class that registers, creates, and defines new Objects
 class ObjFactory {
     typedef std::map<std::string, std::function<Object::ptr(Json::Value)>> map_type;
+    struct registered_type {
+        std::string token;
+        std::function<Object::ptr(Json::Value)> create_f;
+        // std::function<???)()> cast_f;
+    };
 
 public:
     // template<class T, typename... Args>
@@ -87,6 +97,7 @@ public:
 	template<class T>
 	static bool const registerType(const char* name) {
         std::function<Object::ptr(Json::Value)> create_f([](Json::Value j){ return std::make_unique<T>(j); });
+        // std::function<T&(Object::ptr&)> cast_f([](Object::ptr& me){ return me->as<T&>(); }); // Haha I wish
 		getMap()->emplace(name, create_f);
 		return true;
 	}
@@ -96,14 +107,11 @@ private:
     inline static std::shared_ptr<map_type> typemap = nullptr; // The map of all the types and their functions
 };
 
+
 /* Creates a register function for the object and calls it, place inside class definition
 * telabrium_obj_reg: a trick using static initialization order to register the type before main()*/
 #define REGISTER_OBJECT_TYPE(NAME) inline static bool telabrium_obj_reg = ObjFactory::registerType<NAME>(#NAME)
 
-template<class T, typename... Args>
-static Object::ptr newObj(Args... args) {
-    return std::make_unique<T>(args...);
-}
 
 class BlankObject : public Object {
 public:
@@ -114,6 +122,11 @@ private:
 	REGISTER_OBJECT_TYPE(BlankObject);
 };
 
+
+template<class T, typename... Args>
+static Object::ptr newObj(Args... args) {
+    return std::make_unique<T>(args...);
+}
 
 template<class T>
 void Object::takeFromRef(std::unique_ptr<T>& o) {
@@ -135,6 +148,17 @@ template<class T> T* Object::as() {
 		throw ObjectCastException();
 	}
 }
+
+template<class T>
+T& Object::get(std::string id) {
+    return *get(id)->as<T>();
+}
+
+// Testing only
+// auto Object::get(std::string id) -> decltype(getType(id->type)) {
+    
+// }
+
 
 // Recursively runs a function (func) up the object hierarchy, each parent calls func(args) and then has their parent run func()
 template<typename... Args>

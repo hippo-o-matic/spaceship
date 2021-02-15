@@ -45,17 +45,26 @@ void Object::operator-=(Object::ptr& o) {
 	o->parent = nullptr;
 }
 
-// Returns a refrence to the specified element (a unique pointer), casted to type T.
-// This allows whatever method is to use the values of the original object type, not just Object's values
-Object::ptr& Object::operator[](size_t index) {
-	return components.at(index); 
-}
-
-// Same as above, but first searches for the component by id
-Object::ptr& Object::operator[](std::string id) { 
+// Returns a refrence to the specified element (a unique pointer)
+Object::ptr& Object::get(std::string id) {
 	auto index = std::find_if(components.begin(), components.end(), [id](const Object::ptr& o) -> bool { return o->id == id; });
+	if(index == components.end()) { // If the component could not be found, throw an exception
+		// log("\"" + this->id + "\" does not contain a \"" + id + "\"", WARN); // Log the faliure only the first time
+		throw ObjectMissingException(id, this->id);
+	}
 	return *index; // Try dynamic_cast<unique<T>>& if breaks
 }
+
+// Same as above, but 
+Object::ptr& Object::operator[](size_t index) {
+	return components.at(index);
+}
+
+// Equivalent to get(id)
+Object::ptr& Object::operator[](std::string id) { 
+	return get(id);
+}
+
 
 void Object::createComponents(Json::Value items) {
 	for(unsigned i = 0; i < items.size(); i++) {
