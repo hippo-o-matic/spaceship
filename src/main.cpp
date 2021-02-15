@@ -18,29 +18,24 @@ int main() {
 
 	// Testing zone /////////////////////////////////////////
 	Editor::init();
-	Editor::input_map.activate();
+	// Editor::input_map.activate();
 
-	Object::ptr cam_temp = newObj<Camera2d>("player_camera");
+	Object::ptr cam_temp = newObj<Camera2d>("player_camera", &SCR_WIDTH, &SCR_HEIGHT);
 	Camera2d* cam = cam_temp->as<Camera2d>();
-	cam->display_height = &SCR_HEIGHT;
-	cam->display_width = &SCR_WIDTH;
+	Camera2d::main_camera = cam;
+
 	cam->prevent_inherit_rot = true;
+	cam->fov = 5;
 
 	Shader shade("tests/shader/sprite.vs", "tests/shader/sprite.fs");
 	Shader bg("tests/shader/bg.vs", "tests/shader/sprite.fs");
 
-	// Sprite background("tests/img/space.png", glm::vec2(0), 0, glm::vec2(5));
+	Sprite background("bg", "tests/img/space.png", glm::vec2(0), 0, glm::vec2(5));
 
 	Sprite test("test", "tests/img/gex.png");
-	Sprite forward("vest", "tests/img/gex.png");
-	forward.scale = glm::vec2(2);
-	Sprite vel("aa", "tests/img/tex.png", glm::vec2(2));
-	vel.scale = glm::vec2(0.2);
 
 	TileGrid grid = gridTest();
 	Editor::grid = &grid;
-	Editor::camera = cam;
-	cam->take(newObj<ChunkLoader>("chunk_loader", &grid, 1));
 
 	Ship::ship_classes.push_back({
 		"testclass",
@@ -64,11 +59,11 @@ int main() {
 		GLFW_KEY_GRAVE_ACCENT, INPUT_ONCE
 	);
 	control.addBind("down", 
-		[&player](){player.thrust = -player.up();},
+		[&player](){player.thrust += -player.up();},
 		GLFW_KEY_S
 	);
 	control.addBind("up", 
-		[&player](){player.thrust = player.up();},
+		[&player](){player.thrust += player.up();},
 		GLFW_KEY_W
 	);
 	control.addBind("left", 
@@ -87,6 +82,14 @@ int main() {
 		[&player](){player.ship_class.thrust_power -= 3;},
 		GLFW_KEY_LEFT_SHIFT, INPUT_ONCE_RELEASE
 	);
+	control.addBind("drift", 
+		[&player](){player.drift = player.right() * glm::dot(player.velocity, player.right());},
+		GLFW_KEY_SPACE
+	);
+	control.addBind("undrift", 
+		[&player](){player.drift = glm::vec2(0);},
+		GLFW_KEY_SPACE, INPUT_RELEASE
+	);
 
 	bool imgui_window_state = false;
 	// Main loop
@@ -100,9 +103,6 @@ int main() {
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-
-		forward.position = player.position;
-		vel.position = player.position + (2.f*player.thrust - (player.velocity / (player.ship_class.thrust_power * player.ship_class.mass))); 
 
 		// Calculate input
 		// See if imgui needs inputs
@@ -139,23 +139,24 @@ int main() {
 			ImGui::End();
 		}
 
-		shade.set("view", cam->getViewMatrix());
-		shade.set("projection", cam->getProjectionMatrix());
+		shade.set("view", Camera2d::main_camera->getViewMatrix());
+		shade.set("projection", Camera2d::main_camera->getProjectionMatrix());
 	
-		bg.set("view", cam->getViewMatrix());
-		bg.set("projection", cam->getProjectionMatrix());
+		bg.set("view", Camera2d::main_camera->getViewMatrix());
+		bg.set("projection", Camera2d::main_camera->getProjectionMatrix());
 
 		player["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
 
-		player.update(deltaTime);
-
-		// background.draw(bg);
+		background.draw(bg);
 
 		test.draw(shade);
 		// forward.draw(shade);
-		vel.draw(shade);
 		grid.drawChunks(shade);
+		player["test"]->as<Sprite>()->draw(shade);
 		player["sprite"]->as<Sprite>()->draw(shade);
+		// vel.draw(shade);
+
+		player.update(deltaTime);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

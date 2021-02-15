@@ -23,11 +23,18 @@ public:
 	float far = 100;
 
 	// Window size
-	unsigned int* display_height;
 	unsigned int* display_width;
+	unsigned int* display_height;
 
-	Camera2d(std::string id, glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0, PROJ_TYPE _projection = ORTHO);
-	
+	static Camera2d* main_camera;
+
+	Camera2d(std::string id,
+		unsigned* display_w,
+		unsigned* display_h, 
+		glm::vec2 position = glm::vec2(0), 
+		float rotation = 0.f, 
+		PROJ_TYPE _projection = ORTHO
+	);
 	glm::mat4 getViewMatrix();
 	glm::mat4 getProjectionMatrix();
 	float getAspectRatio();
