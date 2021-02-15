@@ -177,12 +177,18 @@ void Input::processActive(GLFWwindow* win) {
 
 // Start tracking inputs from this profile
 void Input::activate() {
-	active_profiles.push_back(this);
+	if(!activated) {
+		active_profiles.push_back(this);
+		activated = true;
+	}
 }
 
 // Stop tracking inputs from this profile
 void Input::deactivate() {
-	active_profiles.erase(std::find(active_profiles.begin(), active_profiles.end(), this));
+	if(activated) {
+		active_profiles.erase(std::find(active_profiles.begin(), active_profiles.end(), this));
+		activated = false;
+	}
 }
 
 // Make this input the only active one

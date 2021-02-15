@@ -84,6 +84,7 @@ public:
     static void processActive(GLFWwindow*);
 
     // Activates the profile, enabling its callbacks and tracking its binds
+    bool activated = false;
     void activate();
     // Deactivates the profile
     void deactivate();
