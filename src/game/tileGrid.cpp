@@ -330,6 +330,7 @@ void TileGrid::markChunk(Chunk* chunk) {
 
 void TileGrid::drawChunks(Shader &shader) {
 	shader.set("transform", glm::mat4(1));
+	shader.set("layer", layer);
 
 	// Bind the grid's VAO and EBO
 	glBindVertexArray(VAO);

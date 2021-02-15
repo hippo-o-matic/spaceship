@@ -21,6 +21,7 @@ void Sprite::draw(Shader &shader){
 	shader.set("sprite", (int)tex_unit);
 
 	shader.set("transform", getWorldTransform());
+	shader.set("layer", layer);
 
 	// draw mesh
 	glBindVertexArray(VAO);

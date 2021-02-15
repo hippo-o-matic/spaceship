@@ -186,27 +186,3 @@ glm::vec2 Object2d::right() {
 		sin(glm::radians(rotation))
 	);
 }
-
-// void Object2d::updateVectors() {
-// 	// Potentially have this as a static? idk
-// 	glm::vec2 WorldUp = glm::vec2(0,1,0);
-// 	// Calculate the new Front vector
-// 	// glm::vec2 front;
-// 	// glm::vec2 rad = glm::radians(getWorldRotEuler());
-// 	// front.x = cos(rad.y) * cos(rad.x);
-// 	// front.y = sin(rad.x);
-// 	// front.z = sin(rad.y) * cos(rad.x);
-	
-// 	forward = glm::normalize(rotation * glm::vec2(0,1));
-// 	// Also re-calculate the Right and Up vector
-// 	right = glm::normalize(glm::cross(forward, WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-// 	up = glm::normalize(glm::cross(right, forward));
-	
-// };
-
-// The benefit of this is: vectors dont get outdated and also updateVectors() isnt being called everytime they're accessed(if they arent moving)
-// glm::vec2 Object2d::getForwardVec() {
-// 	if(rotation != lastRot)
-// 		updateVectors();
-// 	return forward;
-// }

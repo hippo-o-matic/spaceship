@@ -11,6 +11,6 @@ uniform mat4 transform;
 
 void main() {
     FragPos = vec3(transform * vec4(aPos, 1.0));;
-    gl_Position = projection * mat4(mat3(view)) * vec4(FragPos.xy, -1, 1.0);
+    gl_Position = projection * mat4(mat3(view)) * vec4(FragPos.xy, -2, 1.0);
     TexCoord = aTexCoord;
 }

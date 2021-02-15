@@ -43,6 +43,7 @@ public:
 
 	// This grids chunks, declared by a map file and loaded in when needed
 	std::map<unsigned, Chunk*> chunk_slots;
+	int layer = 0;
 
 	glm::uvec2 getChunkSize();
 	glm::uvec2 getTileSize();
