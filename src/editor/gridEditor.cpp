@@ -2,9 +2,10 @@
 
 // TODO: jank
 Input Editor::input_map;
+Input Editor::framebuffer_input;
 glm::ivec2 Editor::frame_size;
 glm::vec2 Editor::screen_to_frame;
-Camera2d* Editor::camera;
+Camera2d Editor::camera("editor_camera", &SCR_WIDTH ,&SCR_HEIGHT);
 TileGrid* Editor::grid;
 unsigned Editor::selected;
 unsigned Editor::current_attribs;
@@ -12,23 +13,25 @@ glm::vec2 Editor::drag_last = glm::vec2(0);
 bool Editor::dont_place = true;
 
 void Editor::init() {
-	input_map.setFramebufferCallback(updateFramebuffer);
+	framebuffer_input.setFramebufferCallback(updateFramebuffer);
+	framebuffer_input.activate();
+
 	input_map.setScrollCallback(scrollZoom);
 
 	input_map.addBind("drag", [](){
-		glm::vec2 pos = mouseToWorld(camera) - camera->position; // Find the position of the cursor independent of the camera position
+		glm::vec2 pos = mouseToWorld(Editor::camera) - Editor::camera.position; // Find the position of the cursor independent of the camera position
 		glm::vec2 offset = pos - drag_last; // The amount to move the camera
-		if(offset.x > place_threshold || offset.x < -place_threshold || offset.y > place_threshold || offset.y < -place_threshold)
+		if(offset.x > place_threshold || offset.x < -place_threshold || offset.y > place_threshold || offset.y < -place_threshold) {
 			dont_place = true;
-
-		camera->position -= offset;
+		}
 		
+		Editor::camera.position -= offset;
 		drag_last = pos;
 	}, GLFW_MOUSE_BUTTON_1, GLFW_PRESS, MOUSE_B);
 
 	input_map.addBind("placeTile", [](){
 		if(!dont_place)
-			grid->updateChunk(grid->addTileToGrid(mouseToWorld(camera), selected, current_attribs));
+			grid->updateChunk(grid->addTileToGrid(mouseToWorld(Editor::camera), selected, current_attribs));
 		dont_place = false;
 	}, GLFW_MOUSE_BUTTON_1, INPUT_ONCE_RELEASE, MOUSE_B);
 
@@ -37,7 +40,7 @@ void Editor::init() {
 	}, GLFW_MOUSE_BUTTON_2, INPUT_ONCE_RELEASE, MOUSE_B);
 
 	input_map.addBind("drag_release", [](){
-		drag_last = mouseToWorld(camera) - camera->position;
+		drag_last = mouseToWorld(Editor::camera) - Editor::camera.position;
 	}, GLFW_MOUSE_BUTTON_3, GLFW_RELEASE, MOUSE_B);
 
 	input_map.addBind("nextTile", [](){
@@ -71,9 +74,28 @@ void Editor::show_gui() {
 	ImGui::InputText("Map file path", &input_path);
 	if(ImGui::Button("Save"))
 		grid->saveFile(input_path);
+	ImGui::SameLine();
 	if(ImGui::Button("Load"))
 		grid->loadFile(input_path);
 
+	static bool edit_mode = false;
+	ImGui::Checkbox("Edit mode", &edit_mode);
+	
+	// Note: this is janky and could result in a segfault, but because this is supposed to be a dev tool it likely doesn't matter too much
+	// TODO[4]: hold on to this camera and make sure it isn't destroyed, or just redo the camera system
+	static Camera2d* last_cam = Camera2d::main_camera;
+	static bool change_cam = true;
+	if(edit_mode && change_cam) {
+		input_map.activate();
+		last_cam = Camera2d::main_camera;
+		Camera2d::main_camera = &Editor::camera;
+		change_cam = false;
+		drag_last = Editor::camera.position;
+	} else if(!edit_mode && !change_cam) {
+		input_map.deactivate();
+		Camera2d::main_camera = last_cam;
+		change_cam = true;
+	}
 
 	switch (sel_rotation) {
 		case 0:
@@ -116,14 +138,14 @@ void Editor::scrollChangeTile(GLFWwindow* window, double x, double y) {
 }
 
 void Editor::scrollZoom(GLFWwindow* window, double x, double y) {
-	camera->fov += y * -0.5;
-	if(camera->fov > 30)
-		camera->fov = 30;
-	if(camera->fov < .5)
-		camera->fov = .5;
+	camera.fov += y * -0.5;
+	if(camera.fov > 30)
+		camera.fov = 30;
+	if(camera.fov < .5)
+		camera.fov = .5;
 }
 
-glm::vec2 Editor::mouseToWorld(Camera2d* cam) {
+glm::vec2 Editor::mouseToWorld(Camera2d& cam) {
 	glm::vec2 screen = glm::vec2(Input::mouse_x, Input::mouse_y);
 	
 	// Screen to framebuffer
@@ -134,7 +156,7 @@ glm::vec2 Editor::mouseToWorld(Camera2d* cam) {
 	cursor.y = 1 - ((cursor.y + .5f) / frame_size.y) * 2;
 	
 	// Clip space to camera space
-	glm::mat4 to_world = glm::inverse(cam->getProjectionMatrix() * cam->getViewMatrix());
+	glm::mat4 to_world = glm::inverse(cam.getProjectionMatrix() * cam.getViewMatrix());
 	cursor = to_world * glm::vec4(cursor, 0, 1);
 	return cursor;
 }

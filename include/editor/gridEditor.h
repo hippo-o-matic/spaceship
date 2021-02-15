@@ -3,16 +3,18 @@
 #include "game/tileGrid.h"
 #include "input.h"
 #include "camera2d.h"
+#include "window.h"
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
 namespace Editor {
 	extern Input input_map;
+	extern Input framebuffer_input;
 	extern glm::ivec2 frame_size;
 	extern glm::vec2 screen_to_frame; // Conversion factor from window size to framebuffer size, used for hidpi screens
 
-	extern Camera2d* camera;
+	extern Camera2d camera;
 	extern TileGrid* grid;
 
 	extern unsigned selected; // The tile to place when placeTile is called
@@ -26,7 +28,7 @@ namespace Editor {
 	void show_gui();
 	void updateFramebuffer(GLFWwindow* window, int w, int h);
 
-	glm::vec2 mouseToWorld(Camera2d* cam);
+	glm::vec2 mouseToWorld(Camera2d& cam);
 
 	void scrollChangeTile(GLFWwindow* window, double x, double y);
 	void scrollZoom(GLFWwindow* window, double x, double y);
