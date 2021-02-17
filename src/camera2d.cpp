@@ -22,7 +22,7 @@ Camera2d::Camera2d(std::string id,
 // Returns the view matrix
 glm::mat4 Camera2d::getViewMatrix(){
 	glm::mat4 rotate = glm::rotate(glm::mat4(1), glm::radians(-getWorldRot()), Front); // Rotate
-	glm::mat4 pos = glm::translate(glm::mat4(1), glm::vec3(getWorldPos(), layer)); // And finally translate by position
+	glm::mat4 pos = glm::translate(glm::mat4(1), glm::vec3(getWorldPos(), 0)); // And finally translate by position
 	
 	return rotate * glm::inverse(pos);
 }

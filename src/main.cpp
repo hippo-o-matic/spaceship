@@ -30,7 +30,7 @@ int main() {
 	Shader shade("tests/shader/sprite.vs", "tests/shader/sprite.fs");
 	Shader bg("tests/shader/bg.vs", "tests/shader/sprite.fs");
 
-	Sprite background("bg", "tests/img/space.png", glm::vec2(0), 0, glm::vec2(5));
+	Sprite background("bg", "tests/img/space.png", glm::vec2(0), 0, glm::vec2(5), -1);
 
 	Sprite test("test", "tests/img/gex.png");
 
@@ -139,22 +139,22 @@ int main() {
 			ImGui::End();
 		}
 
-		shade.set("view", Camera2d::main_camera->getViewMatrix());
-		shade.set("projection", Camera2d::main_camera->getProjectionMatrix());
+		// shade.set("view", Camera2d::main_camera->getViewMatrix());
+		// shade.set("projection", Camera2d::main_camera->getProjectionMatrix());
 	
-		bg.set("view", Camera2d::main_camera->getViewMatrix());
-		bg.set("projection", Camera2d::main_camera->getProjectionMatrix());
+		// bg.set("view", Camera2d::main_camera->getViewMatrix());
+		// bg.set("projection", Camera2d::main_camera->getProjectionMatrix());
+
+		Sprite::defaultShader()->set("view", Camera2d::main_camera->getViewMatrix());
+		Sprite::defaultShader()->set("projection", Camera2d::main_camera->getProjectionMatrix());
+
+		TileGrid::defaultShader()->set("view", Camera2d::main_camera->getViewMatrix());
+		TileGrid::defaultShader()->set("projection", Camera2d::main_camera->getProjectionMatrix());
 
 		player["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
 
 		background.draw(bg);
-
-		test.draw(shade);
-		// forward.draw(shade);
-		grid.drawChunks(shade);
-		player["test"]->as<Sprite>()->draw(shade);
-		player["sprite"]->as<Sprite>()->draw(shade);
-		// vel.draw(shade);
+		Renderable::draw_all();
 
 		player.update(deltaTime);
 

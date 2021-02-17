@@ -28,7 +28,7 @@ public:
 	glm::vec2 position;
 	float rotation;
 	glm::vec2 scale;
-	int layer = 1;
+	int obj_layer = 1;
 
 	bool prevent_inherit_pos = false;
 	bool prevent_inherit_rot = false;

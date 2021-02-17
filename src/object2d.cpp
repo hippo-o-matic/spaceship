@@ -22,7 +22,7 @@ Object2d::Object2d(Json::Value j) : Object(j) {
 	scale.x = jScl.get(x, default_scl.x).asFloat();
 	scale.y = jScl.get(y, default_scl.y).asFloat();
 
-	layer = j["layer"].asInt();
+	obj_layer = j["obj_layer"].asInt();
 }
 
 Object2d::~Object2d() {}
@@ -109,7 +109,7 @@ glm::mat4 rotationMat4(float degree) {
 // Returns an objects local transformation matrix
 glm::mat4 Object2d::getTransform() {
 	// Get matricies for each transformation
-	glm::mat4 translate_mat = glm::translate(glm::mat4(1), glm::vec3(position, layer));
+	glm::mat4 translate_mat = glm::translate(glm::mat4(1), glm::vec3(position, obj_layer));
 	glm::mat4 rotate_mat = rotationMat4(rotation); 
 
 	// Check that scale is nonzero

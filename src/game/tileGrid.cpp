@@ -1,15 +1,38 @@
 #include "game/tileGrid.h"
 
-TileGrid::TileGrid(glm::uvec2 tile_size, glm::uvec2 chunk_size, unsigned chunk_slots) : tile_size(tile_size), chunk_size(chunk_size) {
+// Static Initialization /////////////////////////////////////////////////////////
+
+const char* TileGrid::default_shader_path_vert = "tests/shader/sprite.vs";
+const char* TileGrid::default_shader_path_frag = "tests/shader/sprite.fs";
+
+// TileGrid Member Functions /////////////////////////////////////////////////////
+
+TileGrid::TileGrid(glm::uvec2 tile_size, glm::uvec2 chunk_size, unsigned chunk_slots, int layer) : 
+	Renderable([this](Shader& shader) {
+		shader.set("layer", getLayer());
+		this->drawChunks(shader);
+	}, defaultShader(), layer),
+	tile_size(tile_size), chunk_size(chunk_size)
+{
 	initBuffers(chunk_slots);
 }
 
-TileGrid::TileGrid(std::string path, unsigned chunk_slots) {
+TileGrid::TileGrid(std::string path, unsigned chunk_slots, int layer) : 
+	Renderable([this](Shader& shader) {
+		shader.set("layer", getLayer());
+		this->drawChunks(shader);
+	}, defaultShader(), layer)
+{
 	if(!loadFile(path)) {
 		tile_size = glm::uvec2(0);
 		chunk_size = glm::uvec2(32);
 	}
 	initBuffers(chunk_slots);
+}
+
+Shader* TileGrid::defaultShader() {
+	static Shader shader(default_shader_path_vert, default_shader_path_frag);
+	return &shader;
 }
 
 glm::uvec2 TileGrid::getChunkSize() {
@@ -330,7 +353,7 @@ void TileGrid::markChunk(Chunk* chunk) {
 
 void TileGrid::drawChunks(Shader &shader) {
 	shader.set("transform", glm::mat4(1));
-	shader.set("layer", layer);
+	shader.set("layer", getLayer());
 
 	// Bind the grid's VAO and EBO
 	glBindVertexArray(VAO);

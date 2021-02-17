@@ -1,12 +1,25 @@
 #include "sprite.h"
 
-Sprite::Sprite(std::string id, std::string image_path, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(id, _pos, _rot, _scl) {
-	texture = loadTexture(image_path);
+const char* Sprite::default_shader_path_vert = "tests/shader/sprite.vs";
+const char* Sprite::default_shader_path_frag = "tests/shader/sprite.fs";
 
+Sprite::Sprite(std::string id, std::string image_path, glm::vec2 _pos, double _rot, glm::vec2 _scl, int layer) : 
+	Renderable([this](Shader& shader) {
+		this->draw(shader);
+	}, defaultShader(), layer),
+	Object2d(id, _pos, _rot, _scl)
+{
+
+	texture = loadTexture(image_path);
 	init_buffers();
 }
 
-Sprite::Sprite(std::string id, Texture tex, glm::vec2 _pos, double _rot, glm::vec2 _scl) : Object2d(id, _pos, _rot, _scl) {
+Sprite::Sprite(std::string id, Texture tex, glm::vec2 _pos, double _rot, glm::vec2 _scl, int layer) : 
+	Renderable([this](Shader& shader) {
+		this->draw(shader);
+	}, defaultShader(), layer),
+	Object2d(id, _pos, _rot, _scl)
+{
 	texture = tex;
 	mesh = Primitive::rect(glm::vec2(1), glm::vec2(0)).setBasis(tex.basis_lower_left, tex.basis_upper_right);
 
@@ -14,14 +27,15 @@ Sprite::Sprite(std::string id, Texture tex, glm::vec2 _pos, double _rot, glm::ve
 }
 
 // render the mesh
-void Sprite::draw(Shader &shader){
+void Sprite::draw(Shader& shader){
 	unsigned tex_unit = GL_TEXTURE0;
 	glActiveTexture(tex_unit);
 	glBindTexture(GL_TEXTURE_2D, texture.glID);
 	shader.set("sprite", (int)tex_unit);
 
+	obj_layer = getLayer();
 	shader.set("transform", getWorldTransform());
-	shader.set("layer", layer);
+	shader.set("layer", getLayer());
 
 	// draw mesh
 	glBindVertexArray(VAO);
@@ -32,6 +46,12 @@ void Sprite::draw(Shader &shader){
 	glBindVertexArray(0);
 	glActiveTexture(GL_TEXTURE0);
 }
+
+Shader* Sprite::defaultShader() {
+	static Shader shader(default_shader_path_vert, default_shader_path_frag);
+	return &shader;
+}
+
 
 void Sprite::init_buffers() {
 	// Create buffers

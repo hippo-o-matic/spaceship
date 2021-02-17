@@ -4,6 +4,7 @@
 #include "texture.h"
 #include "mesh2d.h"
 #include "shader.h"
+#include "render.h"
 
 #include "glad/glad.h"
 #include "glm/glm.hpp"
@@ -15,7 +16,7 @@
 #include <fstream>
 #include <forward_list>
 
-class TileGrid {
+class TileGrid : private Renderable {
 public:
 	struct Tile {
 		unsigned tileID;
@@ -38,12 +39,17 @@ public:
 		unsigned tile_index = 0; // The chunk's position in the grid file
 	};
 
-	TileGrid(glm::uvec2 tile_size = glm::uvec2(1), glm::uvec2 chunk_size = glm::uvec2(32), unsigned chunk_slots = 9);
-	TileGrid(std::string path, unsigned chunk_slots = 9);
+
+	TileGrid(
+		glm::uvec2 tile_size = glm::uvec2(1),
+		glm::uvec2 chunk_size = glm::uvec2(32), 
+		unsigned chunk_slots = 9, 
+		int layer = 0
+	);
+	TileGrid(std::string path, unsigned chunk_slots = 9, int layer = 0);
 
 	// This grids chunks, declared by a map file and loaded in when needed
 	std::map<unsigned, Chunk*> chunk_slots;
-	int layer = 0;
 
 	glm::uvec2 getChunkSize();
 	glm::uvec2 getTileSize();
@@ -67,16 +73,19 @@ public:
 	bool loadFile(std::string); // Reads texture data and chunk positions into the grid
 	void saveFile(std::string); // Saves all chunks and texture data to a readable map file
 
+	static Shader* defaultShader();
+	
 private:
-	const unsigned format_version = 0;
-
+	// const unsigned format_version = 0;
 	unsigned VAO, EBO;
 	glm::uvec2 tile_size; // The amount of world units the tiles should be
 	glm::uvec2 chunk_size = glm::uvec2(32); // Columns and rows in a chunk
 	std::string path;
 	std::forward_list<Chunk> chunks;
-
 	std::map<unsigned, TexMap> textures; 
 
 	void initBuffers(unsigned slot_count); // Called once to initalize buffers, setting up `slot_count` slots
+
+	static const char* default_shader_path_vert;
+	static const char* default_shader_path_frag;
 };
