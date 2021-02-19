@@ -32,7 +32,7 @@ TileGrid::TileGrid(std::string path, unsigned chunk_slots, int layer) :
 
 Shader* TileGrid::defaultShader() {
 	static Shader shader(default_shader_path_vert, default_shader_path_frag);
-	return &shader;
+	return register_shader(&shader);
 }
 
 glm::uvec2 TileGrid::getChunkSize() {

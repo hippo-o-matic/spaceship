@@ -25,6 +25,8 @@ public:
 	float angular_velocity;
 	glm::vec2 velocity;
 
+	glm::vec2 drift = glm::vec2(0);
+
 	Ship(std::string id, std::string class_name);
 	~Ship();
 

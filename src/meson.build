@@ -10,7 +10,8 @@ src = files(
 	'mesh2d.cpp',
 	'sprite.cpp',
 	'camera2d.cpp',
-	'texture.cpp'
+	'texture.cpp',
+	'render.cpp'
 )
 
 subdir('game')

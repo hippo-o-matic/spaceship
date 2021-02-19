@@ -246,10 +246,18 @@ const std::vector<Vertex2d> joinCoords(std::vector<glm::vec2> pos, std::vector<V
 	return tex;
 }
 
-Polygon& Polygon::joinBasis(glm::vec2 lower_left, glm::vec2 upper_right) {
+Polygon& Polygon::mergeBasis(glm::vec2 lower_left, glm::vec2 upper_right) {
 	for(Vertex2d& v : vertices) {
 		v.tex *= (upper_right - lower_left);
 		v.tex += lower_left;
+	}
+	return *this;
+}
+
+Polygon& Polygon::unmergeBasis(glm::vec2 lower_left, glm::vec2 upper_right) {
+	for(Vertex2d& v : vertices) {
+		v.tex -= lower_left;
+		v.tex /= (upper_right - lower_left);
 	}
 	return *this;
 }

@@ -17,8 +17,8 @@ int main() {
 	float lastFrame = 0.0f;
 
 	// Testing zone /////////////////////////////////////////
+
 	Editor::init();
-	// Editor::input_map.activate();
 
 	Object::ptr cam_temp = newObj<Camera2d>("player_camera", &SCR_WIDTH, &SCR_HEIGHT);
 	Camera2d* cam = cam_temp->as<Camera2d>();
@@ -27,12 +27,17 @@ int main() {
 	cam->prevent_inherit_rot = true;
 	cam->fov = 5;
 
-	Shader shade("tests/shader/sprite.vs", "tests/shader/sprite.fs");
 	Shader bg("tests/shader/bg.vs", "tests/shader/sprite.fs");
+	Renderable::register_shader(&bg);
 
-	Sprite background("bg", "tests/img/space.png", glm::vec2(0), 0, glm::vec2(5), -1);
+	TiledSprite background("bg", "tests/img/space.png", glm::vec2(1, 1), glm::ivec2(3), -1);
+	background.scl(glm::vec2(10));
+	background.render_shader = &bg;
 
 	Sprite test("test", "tests/img/gex.png");
+	
+	AnimSprite anim_test("aieee", "tests/textures/anim_test.png", 32, 10, 2);
+	anim_test.pos(glm::vec2(3, 3));
 
 	TileGrid grid = gridTest();
 	Editor::grid = &grid;
@@ -91,6 +96,12 @@ int main() {
 		GLFW_KEY_SPACE, INPUT_RELEASE
 	);
 
+	control.addBind("test", [&anim_test](){
+		anim_test.nextFrame();
+	}, GLFW_KEY_P, INPUT_ONCE);
+
+	////////////////////////////////////////////////
+
 	bool imgui_window_state = false;
 	// Main loop
 	while(appstate) {
@@ -139,21 +150,10 @@ int main() {
 			ImGui::End();
 		}
 
-		// shade.set("view", Camera2d::main_camera->getViewMatrix());
-		// shade.set("projection", Camera2d::main_camera->getProjectionMatrix());
-	
-		// bg.set("view", Camera2d::main_camera->getViewMatrix());
-		// bg.set("projection", Camera2d::main_camera->getProjectionMatrix());
-
-		Sprite::defaultShader()->set("view", Camera2d::main_camera->getViewMatrix());
-		Sprite::defaultShader()->set("projection", Camera2d::main_camera->getProjectionMatrix());
-
-		TileGrid::defaultShader()->set("view", Camera2d::main_camera->getViewMatrix());
-		TileGrid::defaultShader()->set("projection", Camera2d::main_camera->getProjectionMatrix());
-
 		player["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
+		anim_test.animate(deltaTime, 0.5);
 
-		background.draw(bg);
+		// background.draw(bg);
 		Renderable::draw_all();
 
 		player.update(deltaTime);

@@ -7,37 +7,20 @@
 #include "texture.h"
 
 #include "glm/glm.hpp"
-#include "stb_image.h" // For loading textures
 
 #include <string>
-#include <filesystem> // For loading textures
 
 class Sprite : public Renderable, public Object2d {
 public:
-	Sprite(
-		std::string id,
-		std::string path,
-		glm::vec2 _pos = glm::vec2(0),
-		double _rot = 0.0,
-		glm::vec2 _scl = glm::vec2(1),
-		int layer = 1
-	);
-
-	Sprite(
-		std::string id,
-		Texture tex,
-		glm::vec2 _pos = glm::vec2(0),
-		double _rot = 0.0,
-		glm::vec2 _scl = glm::vec2(1),
-		int layer = 1
-	);
+	Sprite(std::string id, std::string path, int layer = 1);
+	Sprite(std::string id, Texture tex, int layer = 1);
 
 	Polygon mesh = Primitive::rect();
 	Texture texture;
 
 	unsigned int VAO;
 
-	void draw(Shader &shader);
+	virtual void draw(Shader &shader);
 	void updateMesh();
 
 	static std::vector<Sprite> sprites;
@@ -53,3 +36,54 @@ protected:
 	static const char* default_shader_path_frag;
 };
 
+class TiledSprite : public Sprite {
+public:
+	TiledSprite(
+		std::string id,
+		std::string path,
+		glm::vec2 size,
+		glm::ivec2 range,
+		int layer = 1
+	);
+
+	TiledSprite(
+		std::string id,
+		Texture tex,
+		glm::vec2 size,
+		glm::ivec2 range,
+		int layer = 1
+	);
+	
+	void updateOffsets(glm::vec2 offset_size, glm::ivec2 tiling_range);
+	void draw(Shader& shader) override;
+	static Shader* tilingShader();
+
+private:
+	unsigned IBO;
+	glm::vec2 offset_size;
+	glm::ivec2 tiling_range;
+
+	void init_IBO(glm::vec2 offset_size, glm::ivec2 tiling_range);
+
+	static const char* tiled_shader_path_vert;
+};
+
+class AnimSprite : public Sprite {
+public:
+	AnimSprite(std::string id, std::string path, unsigned frame_height, unsigned frame_count, int layer = 1);
+	AnimSprite(std::string id, Texture tex, unsigned frame_height, unsigned frame_count, int layer = 1);
+
+	unsigned frame_height;
+	unsigned start_frame = 0;
+	unsigned end_frame;
+
+	unsigned setFrame(unsigned frame);
+	unsigned nextFrame(int frames = 1);
+
+	void animate(float deltaTime, float fps);
+
+private:
+	unsigned frame;
+
+	void updateTexture();
+};
