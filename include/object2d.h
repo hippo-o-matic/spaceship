@@ -34,13 +34,15 @@ public:
 	bool prevent_inherit_rot = false;
 	bool prevent_inherit_scl = false;
 	
+	Object2d& pos(glm::vec2 pos);
+	Object2d& rot(float rot);
+	Object2d& scl(glm::vec2 scl);
+
 	glm::vec2 getWorldPos();
 	glm::vec2 setWorldPos(glm::vec2);
 
 	float getWorldRot();
 	float setWorldRot(float);
-	
-	float setRot(float);
 	float rotate(float);
 
 	glm::vec2 getWorldScl();

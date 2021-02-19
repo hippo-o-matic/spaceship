@@ -27,6 +27,31 @@ Object2d::Object2d(Json::Value j) : Object(j) {
 
 Object2d::~Object2d() {}
 
+Object2d& Object2d::pos(glm::vec2 pos) {
+	position = pos;
+	return *this;
+}
+
+Object2d& Object2d::rot(float rot) {
+	if(rot >= 360) {
+		rot = fmod(rot, 360);
+	} else if(rot < 0) {
+		rot = fmod(rot, 360);
+	}
+
+	rotation = rot;
+	return *this;
+}
+
+Object2d& Object2d::scl(glm::vec2 scl) {
+	if(scl.x == 0)
+		scl.x = 1;
+	if(scl.y == 0)
+		scl.y = 1;
+
+	scale = scl;
+	return *this;
+}
 
 glm::vec2 Object2d::getWorldPos() {
 	if(!prevent_inherit_pos)
@@ -49,14 +74,6 @@ float Object2d::getWorldRot() {
 
 float Object2d::setWorldRot(float dest) {
 	return rotate(dest - getWorldRot());  
-}
-
-
-float Object2d::setRot(float dest) {
-	if(dest >= 360)
-		dest = fmod(dest, 360);
-
-	return rotation = dest;
 }
 
 float Object2d::rotate(float in) {
