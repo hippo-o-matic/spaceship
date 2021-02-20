@@ -83,7 +83,7 @@ public:
 	void animate(float deltaTime, float fps);
 
 private:
-	unsigned frame;
+	unsigned frame = 0;
 
 	void updateTexture();
 };

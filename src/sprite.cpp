@@ -210,25 +210,26 @@ unsigned AnimSprite::nextFrame(int frames) {
 // Calculate the texture coordinates for this frame
 void AnimSprite::updateTexture() {
 	static unsigned last_frame = 0;
+	// TODO: Ughhhhh fix unmergeBasis
 	// First, undo the basis from the last frame change
 	// Don't do this the first time this function is called, or we'll end up undoing something that didn't happen
-	// static bool first_update = true;
-	// if(!first_update) {
-	// 	// Undoes the last update. Read the next part to see what this does
-	// 	glm::vec2 lower_left(0, (last_frame * frame_height) / texture.height);
-	// 	glm::vec2 upper_right(1, ((last_frame + 1) * frame_height) / texture.height); // Add 1 to the frame to get the top basis
-	// 	mesh.unmergeBasis(lower_left, upper_right); 
-	//  last_frame = frame;
-	// } else {
-	// 	first_update = false; // Not a fan of this branch personally, but idk a cooler way to do this
-	// }
+	static bool first_update = true;
+	if(!first_update) {
+		// Undoes the last update. Read the next part to see what this does
+		glm::vec2 lower_left(0, (last_frame * frame_height) / (float)texture.height);
+		glm::vec2 upper_right(1, ((last_frame + 1) * frame_height) / (float)texture.height); // Add 1 to the frame to get the top basis
+		mesh.unmergeBasis(lower_left, upper_right); 
+	 	last_frame = frame;
+	} else {
+		first_update = false; // Not a fan of this branch personally, but idk a cooler way to do this
+	}
 
 	// Find the basis for the frame
 	// Animated textures have their frames arranged vertically, so the horizontal on the basis will just be 0 to 1
 	// The lower basis is the frame # (starting at 0), times the frames height, divided by the total texture height to scale it between 0 and 1
 	glm::vec2 lower_left(0, (frame * frame_height) / (float)texture.height);
 	glm::vec2 upper_right(1, ((frame + 1) * frame_height) / (float)texture.height); // Add 1 to the frame to get the top basis
-	mesh.setBasis(lower_left, upper_right).regenTexCoords(); // Merge the frame basis with the current basis
+	mesh.mergeBasis(lower_left, upper_right).regenTexCoords(); // Merge the frame basis with the current basis
 	// Only regenTexCoords at the end here, we don't need to do it while undoing the previous basis
 	updateMesh(); // Send new mesh to VBO
 }
