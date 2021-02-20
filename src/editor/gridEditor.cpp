@@ -35,8 +35,12 @@ void Editor::init() {
 		dont_place = false;
 	}, GLFW_MOUSE_BUTTON_1, INPUT_ONCE_RELEASE, MOUSE_B);
 
-	input_map.addBind("fillChunk", [](){
-		fillChunk();
+	// input_map.addBind("fillChunk", [](){
+	// 	fillChunk();
+	// }, GLFW_MOUSE_BUTTON_2, INPUT_ONCE_RELEASE, MOUSE_B);
+
+	input_map.addBind("eraseTile", [](){
+		grid->updateChunk(grid->removeTileFromGrid(mouseToWorld(Editor::camera)));
 	}, GLFW_MOUSE_BUTTON_2, INPUT_ONCE_RELEASE, MOUSE_B);
 
 	input_map.addBind("drag_release", [](){

@@ -142,7 +142,30 @@ TileGrid::Chunk* TileGrid::addTileToGrid(glm::vec2 pos, unsigned tileID, unsigne
 	return chunk;
 }
 
+TileGrid::Chunk* TileGrid::removeTileFromGrid(glm::vec2 pos) {
+	Chunk* chunk = getChunk(pos);
+
+	glm::ivec2 tile_pos = glm::ivec2(std::round(pos.x), std::round(pos.y)); // Absolute position in the grid
+	tile_pos.x %= chunk_size.x * ((tile_pos.x < 0) ? -1 : 1);
+	tile_pos.y %= chunk_size.y * ((tile_pos.y < 0) ? -1 : 1);
+
+	removeTileFromChunk(chunk, tile_pos);
+	return chunk;
+}
+
 void TileGrid::addTileToChunk(Chunk* chunk, glm::ivec2 position, unsigned tileID, unsigned attribs) {
+	// Find any tiles with the same position in this chunk
+	removeTileFromChunk(chunk, position);
+	
+	// Insert the tile
+	glm::ivec2 pos_in_chunk = glm::ivec2(
+		position.x % chunk_size.x,
+		position.y % chunk_size.y
+	);
+	chunk->tiles.insert({ tileID, pos_in_chunk, attribs });
+}
+
+void TileGrid::removeTileFromChunk(Chunk* chunk, glm::ivec2 position) {
 	// Find any tiles with the same position in this chunk
 	auto it = std::find_if(chunk->tiles.begin(), chunk->tiles.end(), [position](auto tile) {
 		return position == tile.pos;
@@ -152,13 +175,6 @@ void TileGrid::addTileToChunk(Chunk* chunk, glm::ivec2 position, unsigned tileID
 		// If a tile is found, erase it first
 		chunk->tiles.erase(it);
 	} 
-	
-	// Insert the tile
-	glm::ivec2 pos_in_chunk = glm::ivec2(
-		position.x % chunk_size.x,
-		position.y % chunk_size.y
-	);
-	chunk->tiles.insert({ tileID, pos_in_chunk, attribs });
 }
 
 glm::ivec2 TileGrid::calcChunkPos(glm::vec2 world_pos) {

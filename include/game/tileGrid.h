@@ -60,7 +60,9 @@ public:
 	glm::ivec2 calcChunkPos(glm::vec2 world_pos);
 
 	Chunk* addTileToGrid(glm::vec2 position, unsigned tileID, unsigned attribs = NONE);
+	Chunk* removeTileFromGrid(glm::vec2 position);
 	void addTileToChunk(Chunk* chunk, glm::ivec2 position, unsigned tileID, unsigned attribs = NONE);
+	void removeTileFromChunk(Chunk* chunk, glm::ivec2 position);
 
 	unsigned addTexMap(TexMap);
 	unsigned addTexMap(TexMap map, unsigned offset);
