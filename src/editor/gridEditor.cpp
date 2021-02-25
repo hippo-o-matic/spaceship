@@ -1,37 +1,37 @@
 #include "editor/gridEditor.h"
 
 // TODO: jank
-Input Editor::input_map;
-Input Editor::framebuffer_input;
-glm::ivec2 Editor::frame_size;
-glm::vec2 Editor::screen_to_frame;
-Camera2d Editor::camera("editor_camera", &SCR_WIDTH ,&SCR_HEIGHT);
-TileGrid* Editor::grid;
-unsigned Editor::selected;
-unsigned Editor::current_attribs;
-glm::vec2 Editor::drag_last = glm::vec2(0);
-bool Editor::dont_place = true;
+Input GridEditor::input_map;
+Input GridEditor::framebuffer_input;
+glm::ivec2 GridEditor::frame_size;
+glm::vec2 GridEditor::screen_to_frame;
+Camera2d GridEditor::camera("editor_camera", &SCR_WIDTH ,&SCR_HEIGHT);
+TileGrid* GridEditor::grid;
+unsigned GridEditor::selected;
+unsigned GridEditor::current_attribs;
+glm::vec2 GridEditor::drag_last = glm::vec2(0);
+bool GridEditor::dont_place = true;
 
-void Editor::init() {
+void GridEditor::init() {
 	framebuffer_input.setFramebufferCallback(updateFramebuffer);
 	framebuffer_input.activate();
 
 	input_map.setScrollCallback(scrollZoom);
 
 	input_map.addBind("drag", [](){
-		glm::vec2 pos = mouseToWorld(Editor::camera) - Editor::camera.position; // Find the position of the cursor independent of the camera position
+		glm::vec2 pos = mouseToWorld(GridEditor::camera) - GridEditor::camera.getPos(); // Find the position of the cursor independent of the camera position
 		glm::vec2 offset = pos - drag_last; // The amount to move the camera
 		if(offset.x > place_threshold || offset.x < -place_threshold || offset.y > place_threshold || offset.y < -place_threshold) {
 			dont_place = true;
 		}
 		
-		Editor::camera.position -= offset;
+		GridEditor::camera.setPos(camera.getPos() - offset);
 		drag_last = pos;
 	}, GLFW_MOUSE_BUTTON_1, GLFW_PRESS, MOUSE_B);
 
 	input_map.addBind("placeTile", [](){
 		if(!dont_place)
-			grid->updateChunk(grid->addTileToGrid(mouseToWorld(Editor::camera), selected, current_attribs));
+			grid->updateChunk(grid->addTileToGrid(mouseToWorld(GridEditor::camera), selected, current_attribs));
 		dont_place = false;
 	}, GLFW_MOUSE_BUTTON_1, INPUT_ONCE_RELEASE, MOUSE_B);
 
@@ -40,11 +40,11 @@ void Editor::init() {
 	// }, GLFW_MOUSE_BUTTON_2, INPUT_ONCE_RELEASE, MOUSE_B);
 
 	input_map.addBind("eraseTile", [](){
-		grid->updateChunk(grid->removeTileFromGrid(mouseToWorld(Editor::camera)));
+		grid->updateChunk(grid->removeTileFromGrid(mouseToWorld(GridEditor::camera)));
 	}, GLFW_MOUSE_BUTTON_2, INPUT_ONCE_RELEASE, MOUSE_B);
 
 	input_map.addBind("drag_release", [](){
-		drag_last = mouseToWorld(Editor::camera) - Editor::camera.position;
+		drag_last = mouseToWorld(GridEditor::camera) - GridEditor::camera.getPos();
 	}, GLFW_MOUSE_BUTTON_3, GLFW_RELEASE, MOUSE_B);
 
 	input_map.addBind("nextTile", [](){
@@ -57,7 +57,7 @@ void Editor::init() {
 	}, GLFW_KEY_2, INPUT_ONCE);
 }
 
-void Editor::show_gui() {
+void GridEditor::show_gui() {
 	ImGui::Begin("Grid Editor");
 
 	static int buffer;
@@ -92,9 +92,9 @@ void Editor::show_gui() {
 	if(edit_mode && change_cam) {
 		input_map.activate();
 		last_cam = Camera2d::main_camera;
-		Camera2d::main_camera = &Editor::camera;
+		Camera2d::main_camera = &GridEditor::camera;
 		change_cam = false;
-		drag_last = Editor::camera.position;
+		drag_last = GridEditor::camera.getPos();
 	} else if(!edit_mode && !change_cam) {
 		input_map.deactivate();
 		Camera2d::main_camera = last_cam;
@@ -124,7 +124,7 @@ void Editor::show_gui() {
 	ImGui::End();
 }
 
-void Editor::fillChunk() {
+void GridEditor::fillChunk() {
 	TileGrid::TileSet tiles;
 	for(unsigned i = 0; i < grid->getChunkSize().x; i++) {
 		for(unsigned j = 0; j < grid->getChunkSize().y; j++) {
@@ -136,12 +136,12 @@ void Editor::fillChunk() {
 	grid->updateChunk(c);
 }
 
-void Editor::scrollChangeTile(GLFWwindow* window, double x, double y) {
+void GridEditor::scrollChangeTile(GLFWwindow* window, double x, double y) {
 	if((selected + y) >= 0) // If the scroll doesnt put us below 0
 		selected += y;
 }
 
-void Editor::scrollZoom(GLFWwindow* window, double x, double y) {
+void GridEditor::scrollZoom(GLFWwindow* window, double x, double y) {
 	camera.fov += y * -0.5;
 	if(camera.fov > 30)
 		camera.fov = 30;
@@ -149,7 +149,7 @@ void Editor::scrollZoom(GLFWwindow* window, double x, double y) {
 		camera.fov = .5;
 }
 
-glm::vec2 Editor::mouseToWorld(Camera2d& cam) {
+glm::vec2 GridEditor::mouseToWorld(Camera2d& cam) {
 	glm::vec2 screen = glm::vec2(Input::mouse_x, Input::mouse_y);
 	
 	// Screen to framebuffer
@@ -165,14 +165,14 @@ glm::vec2 Editor::mouseToWorld(Camera2d& cam) {
 	return cursor;
 }
 
-void Editor::updateFramebuffer(GLFWwindow* window, int w, int h) {
+void GridEditor::updateFramebuffer(GLFWwindow* window, int w, int h) {
 	glm::ivec2 screen;
 	glfwGetWindowSize(window, &screen.x, &screen.y); 
 	glfwGetFramebufferSize(window, &frame_size.x, &frame_size.y);
 	screen_to_frame = glm::vec2(frame_size) / glm::vec2(screen);
 }
 
-// void Editor::placeTile(glm::vec2 pos, unsigned tileID) {
+// void GridEditor::placeTile(glm::vec2 pos, unsigned tileID) {
 // 	glm::ivec2 tile_pos = glm::ivec2(std::round(pos.x), std::round(pos.y)); // Absolute position in the grid
 
 // 	// Calculate the chunk position from the absolute position

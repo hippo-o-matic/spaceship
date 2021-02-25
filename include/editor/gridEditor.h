@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
-namespace Editor {
+namespace GridEditor {
 	extern Input input_map;
 	extern Input framebuffer_input;
 	extern glm::ivec2 frame_size;

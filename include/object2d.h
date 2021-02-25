@@ -14,65 +14,55 @@ public:
 		float _rot = default_rot,
 		glm::vec2 _scl = default_scl
 	);
-	// Object2d(
-	// 	Object2d* _parent,
-	// 	glm::vec2 _pos = default_pos,
-	// 	float _rot = default_rot,
-	// 	glm::vec2 _scl = default_scl
-	// );
 
 	Object2d(Json::Value j);
 
 	~Object2d();
 
-	glm::vec2 position;
-	float rotation;
-	glm::vec2 scale;
 	int obj_layer = 1;
 
 	bool prevent_inherit_pos = false;
 	bool prevent_inherit_rot = false;
 	bool prevent_inherit_scl = false;
-	
-	Object2d& pos(glm::vec2 pos);
-	Object2d& rot(float rot);
-	Object2d& scl(glm::vec2 scl);
 
-	glm::vec2 getWorldPos();
-	glm::vec2 setWorldPos(glm::vec2);
+	glm::vec2 getPos() const;
+	float getRot() const;
+	glm::vec2 getScl() const;
 
-	float getWorldRot();
-	float setWorldRot(float);
-	float rotate(float);
+	// Primary spatial functions, override these if you need special behavior
+	virtual Object2d& setPos(glm::vec2 pos);
+	virtual Object2d& setRot(float rot);
+	virtual Object2d& setScl(glm::vec2 scl);
 
-	glm::vec2 getWorldScl();
-	glm::vec2 setWorldScl(glm::vec2);
+	glm::vec2 getWorldPos() const;
+	Object2d& setWorldPos(glm::vec2);
 
-	glm::mat4 getTransform();
-	glm::mat4 getWorldTransform();
-	glm::mat4 setTransform(glm::mat4);
-	glm::mat4 setWorldTransform(glm::mat4);
-	glm::mat4 transformBy(glm::mat4);
-	// glm::mat4 transformBy(glm::mat4);
-	// glm::mat4 transformBy(glm::vec2, float, glm::vec2);
-	// glm::mat4 transformBy(glm::vec2, glm::vec2, glm::vec2);
-	// glm::mat4 setTransform(glm::mat4);
+	float getWorldRot() const;
+	Object2d& setWorldRot(float);
+
+	glm::vec2 getWorldScl() const;
+	Object2d& setWorldScl(glm::vec2);
+
+	glm::mat4 getTransform() const;
+	glm::mat4 getWorldTransform() const;
+	Object2d& setTransform(glm::mat4);
+	Object2d& setWorldTransform(glm::mat4);
+	Object2d& transformBy(glm::mat4);
 
 	// Directional vectors
 	glm::vec2 up();
 	glm::vec2 right();
-
-	// // TODO: not a fan of having to call a function as values can become outdated, maybe use getters and setters?
-	// void updateVectors();
-	// Prototype
-	// float lastRot;
-	// glm::vec2 getForwardVec(); 
 
 protected:
 	// Default values for spatial values
 	static constexpr glm::vec2 default_pos = glm::vec2(0);
 	static constexpr float default_rot = 0.0f;
 	static constexpr glm::vec2 default_scl = glm::vec2(1);
+
+private:
+	glm::vec2 position;
+	float rotation;
+	glm::vec2 scale;
 };
 
 float degreeFromMat4(glm::mat4 in);

@@ -68,8 +68,8 @@ void Ship::update(float deltaTime) {
 		angular_velocity = -ROT_VELOCITY_MAX;
 
 
-	position += velocity * deltaTime;
-	rotate(angular_velocity * deltaTime);
+	setPos(getPos() + velocity * deltaTime);
+	setRot(getRot() + angular_velocity * deltaTime);
 
 	angular_thrust = 0;
 	thrust = glm::vec2(0);

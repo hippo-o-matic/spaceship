@@ -27,12 +27,12 @@ Object2d::Object2d(Json::Value j) : Object(j) {
 
 Object2d::~Object2d() {}
 
-Object2d& Object2d::pos(glm::vec2 pos) {
+Object2d& Object2d::setPos(glm::vec2 pos) {
 	position = pos;
 	return *this;
 }
 
-Object2d& Object2d::rot(float rot) {
+Object2d& Object2d::setRot(float rot) {
 	if(rot >= 360) {
 		rot = fmod(rot, 360);
 	} else if(rot < 0) {
@@ -43,7 +43,7 @@ Object2d& Object2d::rot(float rot) {
 	return *this;
 }
 
-Object2d& Object2d::scl(glm::vec2 scl) {
+Object2d& Object2d::setScl(glm::vec2 scl) {
 	if(scl.x == 0)
 		scl.x = 1;
 	if(scl.y == 0)
@@ -53,38 +53,45 @@ Object2d& Object2d::scl(glm::vec2 scl) {
 	return *this;
 }
 
-glm::vec2 Object2d::getWorldPos() {
+glm::vec2 Object2d::getPos() const {
+	return position;
+}
+
+float Object2d::getRot() const {
+	return rotation;
+}
+
+glm::vec2 Object2d::getScl() const {
+	return scale;
+}
+
+glm::vec2 Object2d::getWorldPos() const {
 	if(!prevent_inherit_pos)
 		return glm::vec2(getWorldTransform()[3]);
 	else
 		return position;
 }
 
-glm::vec2 Object2d::setWorldPos(glm::vec2 dest) {
-	return position = dest - getWorldPos();
+Object2d& Object2d::setWorldPos(glm::vec2 dest) {
+	setPos(dest - getWorldPos());
+	return *this;
 }
 
 
-float Object2d::getWorldRot() {
+float Object2d::getWorldRot() const {
 	if(!prevent_inherit_rot)
 		return degreeFromMat4(getWorldTransform());
 	else
-		return rotation;
+		return getRot();
 }
 
-float Object2d::setWorldRot(float dest) {
-	return rotate(dest - getWorldRot());  
+Object2d& Object2d::setWorldRot(float dest) {
+	setRot(dest - getWorldRot());
+	return *this;
 }
 
-float Object2d::rotate(float in) {
-	rotation += in;
-	if(rotation >= 360)
-		rotation = fmod(rotation, 360);
 
-	return rotation;
-}
-
-glm::vec2 Object2d::getWorldScl() {
+ glm::vec2 Object2d::getWorldScl() const {
 	if(!prevent_inherit_scl) {
 		glm::mat4 transform = getWorldTransform();
 		return glm::vec2(
@@ -92,11 +99,12 @@ glm::vec2 Object2d::getWorldScl() {
 			glm::length(transform[1])
 		);
 	} else
-		return scale;
+		return getScl();
 }
 
-glm::vec2 Object2d::setWorldScl(glm::vec2 dest) {
-	return scale = dest / getWorldScl();
+Object2d& Object2d::setWorldScl(glm::vec2 dest) {
+	setScl(dest / getWorldScl());
+	return *this;
 }
 
 float degreeFromMat4(glm::mat4 in) {
@@ -124,18 +132,11 @@ glm::mat4 rotationMat4(float degree) {
 }
 
 // Returns an objects local transformation matrix
-glm::mat4 Object2d::getTransform() {
+glm::mat4 Object2d::getTransform() const {
 	// Get matricies for each transformation
-	glm::mat4 translate_mat = glm::translate(glm::mat4(1), glm::vec3(position, obj_layer));
-	glm::mat4 rotate_mat = rotationMat4(rotation); 
-
-	// Check that scale is nonzero
-	if(scale.x == 0)
-		scale.x = 1;
-	if(scale.y == 0)
-		scale.y = 1;
-	
-	glm::mat4 scale_mat = glm::scale(glm::mat4(1), glm::vec3(scale, 0));
+	glm::mat4 translate_mat = glm::translate(glm::mat4(1), glm::vec3(getPos(), obj_layer));
+	glm::mat4 rotate_mat = glm::rotate(glm::mat4(1), glm::radians(getRot()), glm::vec3(0, 0, 1));//rotationMat4(getRot()); 
+	glm::mat4 scale_mat = glm::scale(glm::mat4(1), glm::vec3(getScl(), 1));
 
 	// Combine them all here
 	glm::mat4 transform = translate_mat * rotate_mat * scale_mat;
@@ -144,7 +145,7 @@ glm::mat4 Object2d::getTransform() {
 }
 
 // Applies parent transformation matricies if any
-glm::mat4 Object2d::getWorldTransform() {
+glm::mat4 Object2d::getWorldTransform() const {
 	glm::mat4 transform = getTransform();
 
 	if(parent) {
@@ -152,7 +153,7 @@ glm::mat4 Object2d::getWorldTransform() {
 		std::function<void(Object*, glm::mat4&)> parentTransform = [](Object* _parent, glm::mat4& _transform) {
 			try { // Try to convert the parent to Object2d
 				Object2d* ptr_2d = _parent->as<Object2d>();
-				_transform = ptr_2d->getTransform() * _transform; // Apply the transformation if it worked
+				_transform = _transform * ptr_2d->getTransform(); // Apply the transformation if it worked
 			} catch(ObjectCastException &e) {
 				return; // If it failed, continue to the next parent
 			} 
@@ -167,26 +168,29 @@ glm::mat4 Object2d::getWorldTransform() {
 	return transform;
 }
 
-glm::mat4 Object2d::setTransform(glm::mat4 in) {
-	position = glm::vec2(in[0][3], in[1][3]);
+Object2d& Object2d::setTransform(glm::mat4 in) {
+	setPos(glm::vec2(in[0][3], in[1][3]));
 
-	scale = glm::vec2(
+	setScl(glm::vec2(
 		glm::length(in[0]),
 		glm::length(in[1])
-	);
+	));
 
-	rotation = degreeFromMat4(in);
+	setRot(degreeFromMat4(in));
 
-	return getTransform(); // TODO: For testing mostly, should return the same thing as `in`
+	return *this; // TODO: For testing mostly, should return the same thing as `in`
 }
 
-glm::mat4 Object2d::setWorldTransform(glm::mat4 in) {
+Object2d& Object2d::setWorldTransform(glm::mat4 in) {
 	glm::mat4 current = getWorldTransform();
-	return setTransform(in * glm::inverse(current) * current); // Multiply the current transform by itself, effectively setting it to 0, then multiply the new transform
+	setTransform(in * glm::inverse(current) * current); // Multiply the current transform by itself, effectively setting it to 0, then multiply the new transform
+	
+	return *this;
 }
 
-glm::mat4 Object2d::transformBy(glm::mat4 in) {
-	return setTransform(in * getTransform());
+Object2d& Object2d::transformBy(glm::mat4 in) {
+	setTransform(in * getTransform());
+	return *this;
 }
 
 
