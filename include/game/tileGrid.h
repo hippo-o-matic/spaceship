@@ -70,7 +70,7 @@ public:
 	void updateVBO(unsigned);
 	void updateChunk(Chunk* chunk);
 	void markChunk(Chunk* chunk);
-	void drawChunks(Shader& shader); // Draws tiles from the currently loaded chunks using data in the IBO (from updateTiles())
+	void draw(Shader& shader); // Draws tiles from the currently loaded chunks using data in the IBO (from updateTiles())
 
 	bool loadFile(std::string); // Reads texture data and chunk positions into the grid
 	void saveFile(std::string); // Saves all chunks and texture data to a readable map file

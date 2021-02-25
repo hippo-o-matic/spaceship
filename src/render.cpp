@@ -1,44 +1,47 @@
 #include "render.h"
 
-std::multimap<int, Renderable*> Renderable::draw_calls;
+std::multimap<int, Renderable*> Renderable::draw_order;
 std::vector<Shader*> Renderable::shaders;
 
-Renderable::Renderable(std::function<void(Shader&)> draw_func, Shader* shader, int layer) {
-	this->render_shader = shader;
-	draw_call = draw_func;
-	draw_call_it = draw_calls.emplace(layer, this);
+Renderable::Renderable(Shader* shader, int layer) : 
+	render_shader(shader)
+{
+	draw_order_it = draw_order.emplace(layer, this);
 }
 
 Renderable::~Renderable(){
-	draw_calls.erase(draw_call_it);
+	draw_order.erase(draw_order_it);
 };
 
 int Renderable::getLayer() {
-	return draw_call_it->first;
+	return draw_order_it->first;
 }
 
 int Renderable::changeLayer(int layer) {
-	draw_calls.erase(draw_call_it);
-	draw_call_it = draw_calls.emplace(layer, this);
+	draw_order.erase(draw_order_it);
+	draw_order_it = draw_order.emplace(layer, this);
 	return layer;
 }
 
 Shader* Renderable::register_shader(Shader* shader) {
-	shaders.push_back(shader);
+	if(std::find(shaders.begin(), shaders.end(), shader) == shaders.end())
+		shaders.push_back(shader);
 	return shader;
 }
 
+void Renderable::draw(Shader& shader) {}
+
 void Renderable::draw_all() {
 	// for(Camera2d* cam : cameras) {
-		for(Shader* shader : shaders) {
+		for(auto& shader : Renderable::shaders) {
 			shader->set("view", Camera2d::main_camera->getViewMatrix());
 			shader->set("projection", Camera2d::main_camera->getProjectionMatrix());
 		}
 
-		for(auto it = draw_calls.begin(); it != draw_calls.end(); it++) {
+		for(auto it = draw_order.begin(); it != draw_order.end(); it++) {
 			Renderable& obj = *(it->second);
 			if(obj.visible) {
-				obj.draw_call(*obj.render_shader);
+				obj.draw(*obj.render_shader);
 			}
 		}
 	// }

@@ -5,9 +5,7 @@ const char* Sprite::default_shader_path_frag = "tests/shader/sprite.fs";
 const char* TiledSprite::tiled_shader_path_vert = "tests/shader/tile.vs";
 
 Sprite::Sprite(std::string id, std::string image_path, int layer) : 
-	Renderable([this](Shader& shader) {
-		this->draw(shader);
-	}, defaultShader(), layer),
+	Renderable(defaultShader(), layer),
 	Object2d(id)
 {
 
@@ -16,9 +14,7 @@ Sprite::Sprite(std::string id, std::string image_path, int layer) :
 }
 
 Sprite::Sprite(std::string id, Texture tex, int layer) : 
-	Renderable([this](Shader& shader) {
-		this->draw(shader);
-	}, defaultShader(), layer),
+	Renderable(defaultShader(), layer),
 	Object2d(id)
 {
 	texture = tex;
