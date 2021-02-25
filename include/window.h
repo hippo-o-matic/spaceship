@@ -12,6 +12,7 @@
 
 #include "input.h"
 #include "logs.h"
+#include "shader.h"
 
 extern unsigned int SCR_WIDTH;
 extern unsigned int SCR_HEIGHT;

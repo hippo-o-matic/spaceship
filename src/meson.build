@@ -11,7 +11,8 @@ src = files(
 	'sprite.cpp',
 	'camera2d.cpp',
 	'texture.cpp',
-	'render.cpp'
+	'render.cpp',
+	'collider.cpp'
 )
 
 subdir('game')

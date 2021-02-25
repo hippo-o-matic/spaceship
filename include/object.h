@@ -67,8 +67,8 @@ public:
     
     template<class T> T* as(); // Returns a pointer to the object as type T, if the object wasn't originally T, throws an ObjectCastException
     
-    template<typename... Args> void runup(std::function<void(Object*, Args...)>, Args... args); // Runs a function for parent recursively, working up the tree
-    template<typename... Args> void rundown(std::function<void(Object*, Args...)>, Args... args); // Runs a function for each child object recursively, branching for each component. Use lightly
+    template<typename... Args> const void runup(std::function<void(Object*, Args...)>, Args... args); // Runs a function for parent recursively, working up the tree
+    template<typename... Args> const void rundown(std::function<void(Object*, Args...)>, Args... args); // Runs a function for each child object recursively, branching for each component. Use lightly
 
 
     // A vector that holds objects with no parent, in practice shouldn't hold anything other than Level objects
@@ -162,14 +162,14 @@ T& Object::get(std::string id) {
 
 // Recursively runs a function (func) up the object hierarchy, each parent calls func(args) and then has their parent run func()
 template<typename... Args>
-void Object::runup(std::function<void(Object*, Args...)> func, Args... args) {
+const void Object::runup(std::function<void(Object*, Args...)> func, Args... args) {
     func(this, args...);
     if(parent)
         parent->runup<Args...>(func, args...);
 }
 
 template<typename... Args>
-void Object::rundown(std::function<void(Object*, Args...)> func, Args... args) {
+const void Object::rundown(std::function<void(Object*, Args...)> func, Args... args) {
     func(this, args...);
     if(!components.empty()) {
         for(auto& it : components) {

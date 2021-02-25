@@ -9,4 +9,4 @@ enum LOG_SEVERITY {
 	INFO, WARN, ERR, CRIT
 };
 
-void log(std::string message,  LOG_SEVERITY severity);
+void log(std::string message, LOG_SEVERITY severity);
