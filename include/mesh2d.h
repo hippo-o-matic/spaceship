@@ -2,6 +2,7 @@
 
 #include "logs.h"
 #include "utility.h"
+#include "render.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,6 +14,29 @@
 struct Vertex2d {
 	glm::vec2 pos; // Position
 	glm::vec2 tex; // Texture coordinates
+};
+
+class Line : Renderable {
+public:
+    glm::vec2 startPoint;
+    glm::vec2 endPoint;
+	
+	static Shader* lineShader();
+
+    Line(glm::vec2 start, glm::vec2 end, glm::vec3 color = glm::vec3(255));
+
+    void setColor(glm::vec3 color);
+
+    void draw(Shader& shader) override;
+
+    ~Line();
+
+private:
+	int shaderProgram;
+    unsigned int VBO, VAO;
+    std::vector<float> vertices;
+    glm::mat4 MVP;
+    glm::vec3 lineColor;
 };
 
 class Polygon {

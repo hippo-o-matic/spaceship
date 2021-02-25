@@ -176,3 +176,78 @@ Polygon Primitive::rect(
 
 	return p;
 }
+
+
+// Line ////////////////////////////////////////////////////
+
+Shader* Line::lineShader() {
+	static Shader shader;
+
+	const char *vertexShaderSource = "#version 330 core\n"
+		"layout (location = 0) in vec2 aPos;\n"
+		"uniform mat4 projection;\n"
+		"uniform mat4 view;\n"
+		"void main()\n"
+		"{\n"
+		"   gl_Position = projection * view * vec4(aPos.x, aPos.y, 100, 1.0);\n"
+		"}\0";
+	const char *fragmentShaderSource = "#version 330 core\n"
+		"out vec4 FragColor;\n"
+		"uniform vec3 color;\n"
+		"void main()\n"
+		"{\n"
+		"   FragColor = vec4(color, 1.0f);\n"
+		"}\n\0";
+
+	static bool init = false;
+	if(!init) {
+		init = true;
+		shader.fromSource(vertexShaderSource, fragmentShaderSource);
+	}
+
+	return register_shader(&shader);
+};
+
+Line::Line(glm::vec2 start, glm::vec2 end, glm::vec3 color) : 
+	Renderable(lineShader(), 100)
+{
+	startPoint = start;
+	endPoint = end;
+	lineColor = color;
+
+	vertices = {
+			start.x, start.y,
+			end.x, end.y
+	};
+	
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+	glBindVertexArray(0);
+}
+
+void Line::setColor(glm::vec3 color) {
+	lineColor = color;
+}
+
+void Line::draw(Shader& shader) {
+	shader.use();
+	shader.set("color", lineColor);
+
+	glBindVertexArray(VAO);
+	glDrawArrays(GL_LINES, 0, 2);
+}
+
+Line::~Line() {
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(shaderProgram);
+}
