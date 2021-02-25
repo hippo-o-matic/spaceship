@@ -1,62 +1,30 @@
 #include "shader.h"
 
-std::vector<unsigned int> Shader::shader_draw_order{};
-std::unordered_map<unsigned int, std::shared_ptr<Shader>> Shader::shaders{};
+bool Shader::glInitialized = false;
+std::vector<Shader*> Shader::build_queue;
 unsigned Shader::active_glID;
 
-std::shared_ptr<Shader> Shader::requestShader(std::string _id, std::string _vertexPath, std::string _fragmentPath, std::string _geometryPath) {
-	// Check for duplicate shaders
-	// If no id is provided, check to see if any shaders have matching paths, and use that instead
-	if(_id == "") {
-		std::string vertexPath = _vertexPath;
-		std::string fragmentPath = _fragmentPath;
-		std::string geometryPath = _geometryPath;
+Shader::Shader(std::string id) : id(id) {}
 
-		for(auto pair : shaders) {
-			if(pair.second->vertexPath == _vertexPath && pair.second->fragmentPath == _fragmentPath && pair.second->geometryPath == _geometryPath) {
-				log("No shader id was given, however a shader already exists with the same paths (\"" + _vertexPath + ", \"" + _fragmentPath + ", \"" + _geometryPath + "\") Please specify an id for the shader", WARN);
-				return pair.second;
-			}
-		}
-	} else {
-		// If a shader with the same id string exists, return the id of that string
-		for(auto pair : shaders) {
-			if(pair.second->id == _id) {
-				return pair.second;
-			}
-		}
-	}
-
-	auto shader = std::make_shared<Shader>(_id, _vertexPath, _fragmentPath, _geometryPath);
-
-	shaders.emplace(std::pair<unsigned int, std::shared_ptr<Shader>>(shader->glID, shader));
-	
-	shader_draw_order.push_back(shader->glID);
-	return shader;
+Shader::Shader(std::string vPath, std::string fPath, std::string gPath)
+{
+	fromFiles(vPath, fPath, gPath);
 }
 
-Shader::Shader(std::string vPath, std::string fPath, std::string gPath) : vertexPath(vPath), fragmentPath(fPath), geometryPath(gPath) {
-	build();
+Shader::Shader(std::string _id, std::string vPath, std::string fPath, std::string gPath) : 
+	id(_id)
+{
+	fromFiles(vPath, fPath, gPath);
 }
 
-Shader::Shader(std::string _id, std::string vPath, std::string fPath, std::string gPath) : id(_id), vertexPath(vPath), fragmentPath(fPath), geometryPath(gPath) {
-	build();
-}
+Shader::~Shader() {}
 
-Shader::~Shader() {
-	auto it = std::find(shader_draw_order.begin(), shader_draw_order.end(), glID);
-	if(it != shader_draw_order.end())
-		shader_draw_order.erase(it);
-}
-
-void Shader::build(){
-	if(glID)
-		glDeleteProgram(glID);
+void Shader::fromFiles(std::string vPath, std::string fPath, std::string gPath) {
+	vertexPath = vPath;
+	fragmentPath = fPath;
+	geometryPath = gPath;
 
 	// 1. retrieve the vertex/fragment source code from filePath
-	std::string vertexCode;
-	std::string fragmentCode;
-	std::string geometryCode;
 	std::ifstream vShaderFile;
 	std::ifstream fShaderFile;
 	std::ifstream gShaderFile;
@@ -92,6 +60,33 @@ void Shader::build(){
 		log("Shader file was not sucessfully read. Paths given: \"" + vertexPath + "\", \"" + fragmentPath + "\", \"" + geometryPath + "\"", ERR);
 		return;
 	}
+
+	build();
+}
+
+void Shader::fromSource(std::string vertexCode, std::string fragmentCode, std::string geometryCode) {
+	this->vertexCode = vertexCode;
+	this->fragmentCode = fragmentCode;
+	this->geometryCode = geometryCode;
+
+	vertexPath = "";
+	fragmentPath = "";
+	geometryPath = "";
+
+	build();
+}
+
+void Shader::build() {
+	// If Opengl hasn't been initialized yet, building a shader will cause a segfault
+	// Instead, store this shader to be built later when Opengl is initialized
+	if(!glInitialized) {
+		if(std::find(build_queue.begin(), build_queue.end(), this) != build_queue.end())
+			build_queue.push_back(this);
+		return;
+	}
+
+	if(glID)
+		glDeleteProgram(glID);
 
 	// Perform substitutions if any
 	for(auto it : substitution_map) {
@@ -236,5 +231,13 @@ void Shader::checkCompileErrors(GLuint shader, std::string type) {
 			error = "Shader failed to link. Faliure type was: " + type + "\n-------------------------------------------------------\n" + infoLog + "\n-------------------------------------------------------\n";
 			log(error, CRIT);
 		}
+	}
+}
+
+void Shader::init() {
+	glInitialized = true;
+	
+	for(Shader* s : build_queue) {
+		s->build();
 	}
 }

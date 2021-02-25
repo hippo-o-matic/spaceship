@@ -41,6 +41,8 @@ GLFWwindow* init_main_window() {
 		log("Failed to initialize GLAD", CRIT);
 		return nullptr;
 	}
+
+	Shader::init();
 	
 	return window;
 }
