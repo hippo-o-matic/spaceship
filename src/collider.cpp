@@ -49,6 +49,16 @@ Line& debug_rvec() {
 	return l;
 }
 
+Path& debug_polytope() {
+	static Path p(glm::vec3(0, 1, 0));
+	return p;
+}
+
+Path& debug_polytope2() {
+	static Path p(glm::vec3(0, .5, .5));
+	return p;
+}
+
 void Collider::checkAll(float deltaTime) {
 	for(auto it = colliders.begin(); it != colliders.end(); it++) { // For every collider
 		Collider& c1 = **it;
@@ -59,10 +69,12 @@ void Collider::checkAll(float deltaTime) {
 			// if(c1.bounding_box.intersects(c2.bounding_box)) { // If their bounding boxes intersect
 				Simplex simplex;
 				bool colliding = checkCollision(c1, c2, &simplex);
+
+				debug_polytope2().setVertsLoop(simplex.copyToVec());
+
 				if(colliding) {
 					glm::vec2 resolve = resolutionVector(c1, c2, simplex.copyToVec());
-					debug_rvec().startPoint = c1.getWorldPos();
-					debug_rvec().endPoint = c1.getWorldPos() + resolve;
+					debug_rvec().setPoints(c1.getWorldPos(), c1.getWorldPos() + resolve);
 					
 					Rigidbody2d *b1 = nullptr, *b2 = nullptr;
 
@@ -76,14 +88,14 @@ void Collider::checkAll(float deltaTime) {
 					} catch(ObjectCastException&) {}
 
 					if(b1 != nullptr && b2 != nullptr) {
-						b1->displace(resolve / 2.f);
-						b2->displace(-resolve / 2.f);
+						b1->displace(-resolve / 2.f);
+						b2->displace(resolve / 2.f);
 						Rigidbody2d::collide(resolve, b1, b2, 0);
 					} else if(b1 != nullptr) {
-						b1->displace(resolve);
+						b1->displace(-resolve);
 						b1->applyForce(b1->getMass() * -b1->velocity * c1.elasticity, resolve); // this is wrong, -velocity will send a diagonally approaching object back the way it came
 					} else if(b2 != nullptr) {
-						b2->displace(-resolve);
+						b2->displace(resolve);
 						b2->applyForce(b2->getMass() * -b2->velocity * c2.elasticity, resolve); // this is wrong, -velocity will send a diagonally approaching object back the way it came
 					}
 
@@ -99,11 +111,11 @@ glm::vec2 Collider::getSupport(Collider& a, Collider& b, glm::vec2 direction) {
 	return a.furthestPoint(direction) - b.furthestPoint(-direction);
 }
 
-const glm::vec2 Collider::perpendicularCW(glm::vec2 vec) {	
+const glm::vec2 Collider::normalCW(glm::vec2 vec) {	
 	return glm::vec2(vec.y, -vec.x);
 }
 
-const glm::vec2 Collider::perpendicularCCW(glm::vec2 vec) {
+const glm::vec2 Collider::normalCCW(glm::vec2 vec) {
 	return glm::vec2(-vec.y, vec.x);
 }
 
@@ -123,6 +135,7 @@ bool Collider::checkCollision(Collider& colliderA, Collider& colliderB, Simplex*
 		support = getSupport(colliderA, colliderB, direction);
  
 		if (glm::dot(support, direction) <= 0) {
+			*resultSimplex = simplex; 
 			return false; // no collision
 		}
 
@@ -151,17 +164,15 @@ bool Collider::sameDirection(const glm::vec2& direction, const glm::vec2& ao) {
 }
 
 bool Collider::lineCheck(Simplex& points, glm::vec2& direction) {
-	glm::vec2 a = points[0];
-	glm::vec2 b = points[1];
+	glm::vec3 a = glm::vec3(points[0], 0);
+	glm::vec3 b = glm::vec3(points[1], 0);
 
-	glm::vec2 ab = b - a;
-	glm::vec2 ao = -a;
+	glm::vec3 ab = b - a;
+	glm::vec3 ao = -a;
  
 	if (sameDirection(ab, ao)) {
-		direction = ao; // In 3d this would need to be glm::cross(glm::cross(ab, ao), ab);
-	}
-
-	else {
+		direction = glm::cross(glm::cross(ab, ao), ab); // In 3d this would need to be glm::cross(glm::cross(ab, ao), ab);
+	} else {
 		points = { a };
 		direction = ao;
 	}
@@ -170,25 +181,25 @@ bool Collider::lineCheck(Simplex& points, glm::vec2& direction) {
 }
 
 bool Collider::triangleCheck(Simplex& points, glm::vec2& direction) {
-	glm::vec2 a = points[0];
-	glm::vec2 b = points[1];
-	glm::vec2 c = points[2];
+	glm::vec3 a = glm::vec3(points[0], 0);
+	glm::vec3 b = glm::vec3(points[1], 0);
+	glm::vec3 c = glm::vec3(points[2], 0);
 
-	glm::vec2 ab = b - a;
-	glm::vec2 ac = c - a;
-	glm::vec2 ao = -a;
+	glm::vec3 ab = b - a;
+	glm::vec3 ac = c - a;
+	glm::vec3 ao = -a;
  
-	// Add this vector in 3d: glm::vec3 abc = ab.cross(ac);
+	glm::vec3 abc = glm::cross(ab, ac);
  
-	if (sameDirection(perpendicularCCW(ac), ao)) { // In 3d, the first term is glm::cross(abc, ac)
+	if (sameDirection(glm::cross(abc, ac), ao)) { // In 3d, the first term is glm::cross(abc, ac)
 		if (sameDirection(ac, ao)) {
 			points = { a, c };
-			direction = ao; // In 3d, this would be glm::cross(glm::cross(ac, ao), ac);
+			direction = glm::cross(glm::cross(ac, ao), ac); // In 3d, this would be glm::cross(glm::cross(ac, ao), ac);
 		} else {
 			return lineCheck(points = { a, b }, direction);
 		}
 	} else {
-		if (sameDirection(perpendicularCW(ab), ao)) { // In 3d, the first term here is glm::cross(ab, abc)
+		if (sameDirection(glm::cross(ab, abc), ao)) { // In 3d, the first term here is glm::cross(ab, abc)
 			return lineCheck(points = { a, b }, direction);
 		}
 
@@ -213,7 +224,6 @@ glm::vec2 Collider::resolutionVector(Collider& colliderA, Collider& colliderB, s
 	auto minIndex = polytope.begin();
 	float minDistance = std::numeric_limits<float>::max();
 	glm::vec2 minNormal;
-
 	while (minDistance == std::numeric_limits<float>::max()) {
 		for (auto it = polytope.begin(); it != polytope.end(); it++) {
 			auto jt = std::next(it); // Iterator to next element
@@ -225,7 +235,7 @@ glm::vec2 Collider::resolutionVector(Collider& colliderA, Collider& colliderB, s
 
 			glm::vec2 vecIJ = vertexJ - vertexI;
 
-			glm::vec2 normal = glm::normalize(glm::vec2(vecIJ.y, -vecIJ.x));
+			glm::vec2 normal = glm::normalize(normalCW(vecIJ));
 			float distance = glm::dot(normal, vertexI);
 
 			if (distance < 0) {
@@ -249,6 +259,7 @@ glm::vec2 Collider::resolutionVector(Collider& colliderA, Collider& colliderB, s
 		}
 	}
 
+	debug_polytope().setVertsLoop(polytope);
 	return minNormal * (minDistance + 0.001f);
 }
 

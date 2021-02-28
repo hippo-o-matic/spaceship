@@ -3,7 +3,7 @@
 #include "logs.h"
 #include "mesh2d.h"
 #include "object2d.h"
-#include "rigidbody.h"
+#include "rigidbody2d.h"
 
 #include "glm/glm.hpp"
 
@@ -132,8 +132,8 @@ private:
 	static std::vector<Collider*> colliders;
 
 	static glm::vec2 getSupport(Collider& a, Collider& b, glm::vec2 direction);
-	static const glm::vec2 perpendicularCW(glm::vec2 vec);	
-	static const glm::vec2 perpendicularCCW(glm::vec2 vec);
+	static const glm::vec2 normalCW(glm::vec2 vec);	
+	static const glm::vec2 normalCCW(glm::vec2 vec);
 	static bool sameDirection(const glm::vec2& direction, const glm::vec2& ao);
 
 	static bool nextSimplex(Simplex& points, glm::vec2& direction);
