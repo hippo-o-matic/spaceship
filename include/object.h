@@ -43,6 +43,7 @@ public:
 
 	std::string id;
     std::string type;
+    Object* parent = nullptr; // Raw pointer to the objects parent
 
     /// Component handling
 
@@ -75,7 +76,6 @@ public:
     // static std::vector<Object::ptr> global;
 
 protected:
-	Object* parent = nullptr; // Raw pointer to the objects parent
 	std::vector<Object::ptr> components; // Vector of the objects sub-components
 	void createComponents(Json::Value items);
 };
