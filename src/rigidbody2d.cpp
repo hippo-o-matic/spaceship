@@ -1,50 +1,50 @@
 #include "rigidbody2d.h"
 
-Rigidbody::Rigidbody2d(std::string id, float mass = 1) : Object(id) {
+Rigidbody2d::Rigidbody2d(std::string id, float mass) : Object(id) {
 	setMass(mass);
 	bodies.push_back(this);
 }
 
-Rigidbody::~Rigidbody2d() {
+Rigidbody2d::~Rigidbody2d() {
 	bodies.erase(std::find(bodies.begin(), bodies.end(), this));
 }
 
-float Rigidbody::getMass() const {
+float Rigidbody2d::getMass() const {
 	return mass;
 }
 
-glm::vec2 Rigidbody::getNetForce() const {
+glm::vec2 Rigidbody2d::getNetForce() const {
 	return net_force;
 }
 
-float Rigidbody::setMass(float mass) {
+float Rigidbody2d::setMass(float mass) {
 	this->mass = mass;
 	// set MOI
 	return mass;
 }
 
-void Rigidbody::teleport_w(glm::vec2 position) {
+void Rigidbody2d::teleport_w(glm::vec2 position) {
 	try{
 		Object2d* p = parent->as<Object2d>();
 		p->setWorldPos(position);
 	} catch(ObjectCastException&) {}
 }
 
-void Rigidbody::displace_w(glm::vec2 offset) {
+void Rigidbody2d::displace_w(glm::vec2 offset) {
 	try{
 		Object2d* p = parent->as<Object2d>();
 		p->setWorldPos(p->getWorldPos() + offset);
 	} catch(ObjectCastException&) {}
 }
 
-void Rigidbody::displace(glm::vec2 offset) {
+void Rigidbody2d::displace(glm::vec2 offset) {
 	try{
 		Object2d* p = parent->as<Object2d>();
 		p->setPos(p->getPos() + offset);
 	} catch(ObjectCastException&) {}
 }
 
-void Rigidbody::applyForce(glm::vec2 force, glm::vec2 pos) {
+void Rigidbody2d::applyForce(glm::vec2 force, glm::vec2 pos) {
 	float angle = 0;
 	if(pos != glm::vec2(0))
 		angle = glm::radians(glm::angle(glm::normalize(force), glm::normalize(pos)));
@@ -52,12 +52,12 @@ void Rigidbody::applyForce(glm::vec2 force, glm::vec2 pos) {
 	net_force += force * (float)cos(angle);
 }
 
-void Rigidbody::applyTorque(float torque) {
+void Rigidbody2d::applyTorque(float torque) {
 	net_torque += torque;
 }
 
 // no way this works
-void Rigidbody::collide(glm::vec2 resolution_vec, Rigidbody2d* b1, Rigidbody2d* b2, float deltaTime, float elastic) {
+void Rigidbody2d::collide(glm::vec2 resolution_vec, Rigidbody2d* b1, Rigidbody2d* b2, float deltaTime, float elastic) {
 	float total_mass = b1->mass + b2->mass;
 	glm::vec2 wtf = 2.f * b1->mass * b2->mass * (b2->velocity - b1->velocity) / total_mass; // divide by deltaTime??
 	// glm::vec2 this_accel((velocity / 2.f) * (elastic ? -1.f : 1.f));
@@ -65,7 +65,7 @@ void Rigidbody::collide(glm::vec2 resolution_vec, Rigidbody2d* b1, Rigidbody2d* 
 	b2->applyForce(-wtf, -resolution_vec);
 }
 
-void Rigidbody::update(float deltaTime) {
+void Rigidbody2d::update(float deltaTime) {
 	velocity += net_force / mass * deltaTime;
 	angular_velocity += net_torque / moment_of_inertia * deltaTime;
 
@@ -87,7 +87,7 @@ void Rigidbody::update(float deltaTime) {
 	net_torque = 0;
 }
 
-void Rigidbody::updateAll(float deltaTime) {
+void Rigidbody2d::updateAll(float deltaTime) {
 	for(auto body : bodies) {
 		body->update(deltaTime);
 	}
