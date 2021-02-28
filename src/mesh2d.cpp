@@ -208,28 +208,71 @@ Shader* Line::lineShader() {
 	return register_shader(&shader);
 };
 
-Line::Line(glm::vec2 start, glm::vec2 end, glm::vec3 color) : 
+Line::Line() : 
 	Renderable(lineShader(), 100)
 {
-	startPoint = start;
-	endPoint = end;
-	lineColor = color;
-
-	vertices = {
-			start.x, start.y,
-			end.x, end.y
-	};
-	
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
+
 	glBindVertexArray(VAO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
-
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+	glBindVertexArray(0);
+}
+
+Line::Line(glm::vec2 start, glm::vec2 end, glm::vec3 color) : 
+	Renderable(lineShader(), 100),
+	lineColor(color)
+{	
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	setPoints(start, end);
+
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+	glBindVertexArray(0);
+}
+
+// Terrible, debug only
+std::vector<Line> makeRing(std::vector<glm::vec2> points) {
+	std::vector<Line> lines;
+	lines.clear();
+	for(auto it = points.begin(); it != points.end(); it++) {
+		auto next = std::next(it);
+		if(next == points.end()) {
+			next = points.begin();
+		} 
+
+		lines.push_back(Line(*it, *next));
+	}
+
+	return lines;
+}
+
+void Line::setPoints(glm::vec2 start, glm::vec2 end) {
+	startPoint = start;
+	endPoint = end;
+	
+	vertices = { start, end };
+	
+	update();
+}
+
+void Line::update() {
+	// Upload new verticies
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), &vertices[0], GL_STATIC_DRAW);
+
+	// Reset binds
 	glBindBuffer(GL_ARRAY_BUFFER, 0); 
 	glBindVertexArray(0);
 }
@@ -243,11 +286,39 @@ void Line::draw(Shader& shader) {
 	shader.set("color", lineColor);
 
 	glBindVertexArray(VAO);
-	glDrawArrays(GL_LINES, 0, 2);
+	glDrawArrays(GL_LINES, 0, vertices.size());
 }
 
 Line::~Line() {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+}
+
+
+// Path ////////////////////////////////////////////////////
+Path::Path(glm::vec3 color) : Line(glm::vec2(0), glm::vec2(0), color) {}
+
+void Path::push_point(glm::vec2 point) {
+	if(!vertices.empty() && vertices.size() != 1)
+		vertices.push_back(vertices.back());
+	vertices.push_back(point);
+}
+
+void Path::setVerts(std::vector<glm::vec2> vertices) {
+	this->vertices.clear();
+	for(glm::vec2 v : vertices) {
+		push_point(v);
+	}
+
+	update();
+}
+
+void Path::setVertsLoop(std::vector<glm::vec2> vertices) {
+	this->vertices.clear();
+	for(glm::vec2 v : vertices) {
+		push_point(v);
+	}
+	push_point(vertices.front());
+
+	update();
 }

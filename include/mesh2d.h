@@ -18,25 +18,39 @@ struct Vertex2d {
 
 class Line : Renderable {
 public:
-    glm::vec2 startPoint;
-    glm::vec2 endPoint;
-	
-	static Shader* lineShader();
-
+	Line();
     Line(glm::vec2 start, glm::vec2 end, glm::vec3 color = glm::vec3(255));
+    ~Line();
 
     void setColor(glm::vec3 color);
+	void setPoints(glm::vec2 start, glm::vec2 end);
+	glm::vec2 getStart() { return startPoint; }
+	glm::vec2 getEnd() { return endPoint; }
 
     void draw(Shader& shader) override;
 
-    ~Line();
+	static Shader* lineShader();
+
+protected:
+    std::vector<glm::vec2> vertices;
+   	glm::vec2 startPoint;
+    glm::vec2 endPoint;
+    glm::vec3 lineColor;
+
+	void update();
 
 private:
 	int shaderProgram;
     unsigned int VBO, VAO;
-    std::vector<float> vertices;
-    glm::mat4 MVP;
-    glm::vec3 lineColor;
+};
+
+class Path : Line {
+public:
+	Path(glm::vec3 color);
+
+	void push_point(glm::vec2 point);
+	void setVerts(std::vector<glm::vec2> vertices);
+	void setVertsLoop(std::vector<glm::vec2> vertices);
 };
 
 class Polygon {
