@@ -3,7 +3,6 @@
 #include "logs.h"
 #include "mesh2d.h"
 #include "object2d.h"
-#include "rigidbody2d.h"
 
 #include "glm/glm.hpp"
 
@@ -122,7 +121,11 @@ public:
 	BoundingBox bounding_box;
 	float elasticity = 0;
 
+	glm::vec2 center; // Center of mass
+	float moi; // Moment of inertia
+
 	virtual glm::vec2 furthestPoint(glm::vec2 direction) = 0;
+	virtual void calcAttribs(float mass) = 0;
 
 	static bool checkCollision(Collider& colliderA, Collider& colliderB, Simplex* resultSimplex);
 	static glm::vec2 resolutionVector(Collider& colliderA, Collider& colliderB, std::vector<glm::vec2> polytope);
@@ -142,17 +145,27 @@ private:
 };
 
 struct CircleCollider : public Collider {
+public:
+	CircleCollider(std::string id, float radius = 1) : Collider(id), radius(radius) {}
+
+	float radius;
+
 	glm::vec2 furthestPoint(glm::vec2 direction) override {
-		return direction;
+		return glm::normalize(direction) * radius;
+	}
+
+	void calcAttribs(float mass) override {
+		center = glm::vec2(0);
+		moi = glm::pi<float>() * pow(radius, 4) / 4;
 	}
 };
 
 struct MeshCollider : public Collider {
 	MeshCollider(std::string id, std::vector<glm::vec2> points);
 
-	Object2d& setPos(glm::vec2 position) override;
-	Object2d& setRot(float angle) override;
-	Object2d& setScl(glm::vec2 scale) override;
+	// Object2d& setPos(glm::vec2 position) override;
+	// Object2d& setRot(float angle) override;
+	// Object2d& setScl(glm::vec2 scale) override;
 
 	glm::vec2 furthestPoint(glm::vec2 direction) override {
 		glm::vec2 max_point;
@@ -168,6 +181,30 @@ struct MeshCollider : public Collider {
 		}
 
 		return max_point;
+	}
+
+	void calcAttribs(float mass) override {
+		float area = 0;
+
+		auto prev = vertices.end() - 1;
+		for (auto it = vertices.begin(); it != vertices.end(); it++) {
+			glm::vec2 a = *prev;
+			glm::vec2 b = *it;
+
+			float area_step = (a.x * b.y - a.y * b.x) / 2.f; // Scalar cross product divided by 2
+			glm::vec2 center_step = (a + b) / 3.f;
+			float mmoi_step = area_step * (glm::dot(a, a) + glm::dot(b, b) + glm::dot(a, b)) / 6.f;
+
+			center = (center * area + center_step * area_step) / (area + area_step);
+			area += area_step;
+			moi += mmoi_step;
+
+			prev = it;
+		}
+
+		float density = mass / area;
+		moi *= density;
+		moi -= mass * glm::dot(center, center);
 	}
 
 private:

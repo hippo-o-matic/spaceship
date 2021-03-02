@@ -1,5 +1,5 @@
 #include "main.h"
-#include "rigidbody.h"
+#include "rigidbody2d.h"
 #include "collider.h"
 
 bool show_debug_menu = true;
@@ -38,22 +38,21 @@ int main() {
 
 	Sprite test("test", "tests/img/gex.png");
 	test.setPos(glm::vec2(1, 1));
-	test.take(newObj<Rigidbody2d>("AAA", 1));
+	test.take(newObj<Rigidbody2d>("AAA", extractStructField(test.mesh.vertices, &Vertex2d::pos), 1));
 	Rigidbody2d& a = *test["AAA"]->as<Rigidbody2d>();
-	a.take(newObj<MeshCollider>("collider", extractStructField(test.mesh.vertices, &Vertex2d::pos)));
 
 	Sprite test2("test2", "tests/img/gex.png");
 	test2.setPos(glm::vec2(0, 2));
-	test2.take(newObj<Rigidbody2d>("AAA2", 1));
+	test2.take(newObj<Rigidbody2d>("AAA2", extractStructField(test2.mesh.vertices, &Vertex2d::pos), 1));
 	Rigidbody2d& a2 = *test2["AAA2"]->as<Rigidbody2d>();
-	a2.take(newObj<MeshCollider>("collider", extractStructField(test2.mesh.vertices, &Vertex2d::pos)));
 
 	AnimSprite anim_test("aieee", "tests/textures/anim_test.png", 32, 10, 2);
 	anim_test.setPos(glm::vec2(3, 3));
 
 
-	Line x_axis(glm::vec2(0, 0), glm::vec2(1, 0), glm::vec3(255, 0, 0));
-	Line y_axis(glm::vec2(0), glm::vec2(0,1), glm::vec3(0,255,0));
+	Line x_axis(glm::vec2(0, 0), glm::vec2(1, 0), glm::vec3(1, 0, 0));
+	Line y_axis(glm::vec2(0), glm::vec2(0,1), glm::vec3(0,1,0));
+	Line ship_v(glm::vec2(0), glm::vec2(0), glm::vec3(0, 0, 1));
 
 	TileGrid grid = gridTest();
 	GridEditor::grid = &grid;
@@ -62,71 +61,47 @@ int main() {
 		"testclass",
 		"tests/textures/ship.png",
 		5,
-		3,
-		100,
+		150,
+		500,
 		0
 	});
 
-	Ship player("player", "testclass");
+	PlayerShip player;
 	player.take(newObj<ChunkLoader>("chunk_loader", &grid, 1));
 	player.takeFromRef(cam_temp);
 	
 	//////////////////////////////////////////////
-		Input control;
-		control.activate();
-		control.addBind("debug", 
-			[&show_debug_menu](){show_debug_menu = !show_debug_menu; },
-			GLFW_KEY_GRAVE_ACCENT, INPUT_ONCE
-		);
-		control.addBind("down", 
-			[&player](){player.thrust += -player.up();},
-			GLFW_KEY_S
-		);
-		control.addBind("up", 
-			[&player](){player.thrust += player.up();},
-			GLFW_KEY_W
-		);
-		control.addBind("left", 
-			[&player](){player.angular_thrust = 1;},
-			GLFW_KEY_A
-		);
-		control.addBind("right", 
-			[&player](){player.angular_thrust = -1;},
-			GLFW_KEY_D
-		);
-		control.addBind("boost", 
-			[&player](){player.ship_class.thrust_power += 3;},
-			GLFW_KEY_LEFT_SHIFT, INPUT_ONCE
-		);
-		control.addBind("unboost", 
-			[&player](){player.ship_class.thrust_power -= 3;},
-			GLFW_KEY_LEFT_SHIFT, INPUT_ONCE_RELEASE
-		);
-		control.addBind("drift", 
-			[&player](){player.drift = player.right() * glm::dot(player.velocity, player.right());},
-			GLFW_KEY_SPACE
-		);
-		control.addBind("undrift", 
-			[&player](){player.drift = glm::vec2(0);},
-			GLFW_KEY_SPACE, INPUT_RELEASE
-		);
+	Input control;
+	control.activate();
+	control.addBind("debug", 
+		[&show_debug_menu](){show_debug_menu = !show_debug_menu; },
+		GLFW_KEY_GRAVE_ACCENT, INPUT_ONCE
+	);
+	// control.addBind("drift", 
+	// 	[&player](){player.drift = player.right() * glm::dot(player.velocity, player.right());},
+	// 	GLFW_KEY_SPACE
+	// );
+	// control.addBind("undrift", 
+	// 	[&player](){player.drift = glm::vec2(0);},
+	// 	GLFW_KEY_SPACE, INPUT_RELEASE
+	// );
 
-		control.addBind("test", [&anim_test](){
-			anim_test.nextFrame();
-		}, GLFW_KEY_P, INPUT_ONCE);
+	control.addBind("test", [&anim_test](){
+		anim_test.nextFrame();
+	}, GLFW_KEY_P, INPUT_ONCE);
 
-		control.addBind("push", [&test](){
-			test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(0,1));
-		}, GLFW_KEY_UP);
-		control.addBind("push2", [&test](){
-			test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(0,-1));
-		}, GLFW_KEY_DOWN);
-		control.addBind("push3", [&test](){
-			test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(1,0));
-		}, GLFW_KEY_RIGHT);
-		control.addBind("push4", [&test](){
-			test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(-1,0));
-		}, GLFW_KEY_LEFT);
+	control.addBind("push", [&test](){
+		test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(0,1));
+	}, GLFW_KEY_UP);
+	control.addBind("push2", [&test](){
+		test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(0,-1));
+	}, GLFW_KEY_DOWN);
+	control.addBind("push3", [&test](){
+		test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(1,0));
+	}, GLFW_KEY_RIGHT);
+	control.addBind("push4", [&test](){
+		test["AAA"]->as<Rigidbody2d>()->applyForce(glm::vec2(-1,0));
+	}, GLFW_KEY_LEFT);
 
 	////////////////////////////////////////////////
 
@@ -170,9 +145,9 @@ int main() {
 			ImGui::Begin("Player");
 			ImGui::Text(("X: " + std::to_string(player.getPos().x)).c_str());
 			ImGui::Text(("Y: " + std::to_string(player.getPos().y)).c_str());
-			ImGui::Text(("VX: " + std::to_string(player.velocity.x)).c_str());
-			ImGui::Text(("VY: " + std::to_string(player.velocity.y)).c_str());
-			ImGui::Text(("AV: " + std::to_string(player.angular_velocity)).c_str());
+			ImGui::Text(("VX: " + std::to_string(player.get<Rigidbody2d>("rigidbody").velocity.x)).c_str());
+			ImGui::Text(("VY: " + std::to_string(player.get<Rigidbody2d>("rigidbody").velocity.y)).c_str());
+			ImGui::Text(("AV: " + std::to_string(player.get<Rigidbody2d>("rigidbody").angular_velocity)).c_str());
 			ImGui::SliderFloat("Mass", &player.ship_class.mass, 0.1, 50);
 			ImGui::SliderFloat("Power", &player.ship_class.thrust_power, 0, 10);
 			ImGui::End();
@@ -189,7 +164,9 @@ int main() {
 		}
 
 		player["chunk_loader"]->as<ChunkLoader>()->loadChunksSquare();
-		// anim_test.animate(deltaTime, 0.5);
+		// ship_v.setPoints(player.getPos(), player.getPos() + player.rigidbody.velocity / 10.f);
+
+		anim_test.animate(deltaTime, 0.5);
 
 		// background.draw(bg);
 		Renderable::draw_all();

@@ -1,6 +1,15 @@
 #include "rigidbody2d.h"
 
-Rigidbody2d::Rigidbody2d(std::string id, float mass) : Object(id) {
+Rigidbody2d::Rigidbody2d(std::string id, std::vector<glm::vec2> mesh, float mass) : Object(id) {
+	this->collider = std::make_unique<MeshCollider>("collider", mesh);
+	collider->parent = this;
+	setMass(mass);
+	bodies.push_back(this);
+}
+
+Rigidbody2d::Rigidbody2d(std::string id, std::unique_ptr<Collider> collider, float mass) : Object(id) {
+	this->collider = std::move(collider);
+	collider->parent = this;
 	setMass(mass);
 	bodies.push_back(this);
 }
@@ -19,7 +28,7 @@ glm::vec2 Rigidbody2d::getNetForce() const {
 
 float Rigidbody2d::setMass(float mass) {
 	this->mass = mass;
-	// set MOI
+	collider->calcAttribs(mass);
 	return mass;
 }
 
@@ -67,17 +76,20 @@ void Rigidbody2d::collide(glm::vec2 resolution_vec, Rigidbody2d* b1, Rigidbody2d
 
 void Rigidbody2d::update(float deltaTime) {
 	velocity += net_force / mass * deltaTime;
-	angular_velocity += net_torque / moment_of_inertia * deltaTime;
+	angular_velocity += net_torque / collider->moi * deltaTime;
 
-	if(abs(velocity.x) < 0.01)
+	// As of writing this, abs(float) decided to stop working so now we use fabs(), which is fine just weird
+	if(fabs(velocity.x) < 0.01)
 		velocity.x = 0;
-	if(abs(velocity.y) < 0.01)
+	if(fabs(velocity.y) < 0.01)
 		velocity.y = 0;
+	if(fabs(angular_velocity) < 0.1)
+		angular_velocity = 0;
 	
 	try{
 		Object2d* p = parent->as<Object2d>();
 		p->setPos(p->getPos() + velocity * deltaTime);
-		p->setRot(p->getRot() + angular_velocity * deltaTime);
+		p->setRot(p->getRot() + angular_velocity * deltaTime); // Needs to be rotated around collider->center but that requires a rework
 	} catch(ObjectCastException&) {
 		// Set an error state or something, as this rigidbody doesn't have an object to update
 	}

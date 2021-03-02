@@ -1,4 +1,5 @@
 #include "collider.h"
+#include "rigidbody2d.h"
 
 std::vector<Collider*> Collider::colliders;
 std::vector<Rigidbody2d*> Rigidbody2d::bodies; // TODO: BIG TEMPORARY
@@ -11,38 +12,38 @@ Collider::~Collider() {
 	colliders.erase(std::find(colliders.begin(), colliders.end(), this));
 }
 
-Object2d& MeshCollider::setPos(glm::vec2 position) {
-	Object2d::setPos(position);
-	bounding_box.position = getWorldPos();
+// Object2d& MeshCollider::setPos(glm::vec2 position) {
+// 	Object2d::setPos(position);
+// 	bounding_box.position = getWorldPos();
 
-	return *this;
-}
+// 	return *this;
+// }
 
-Object2d& MeshCollider::setRot(float angle) {
-	Object2d::setRot(angle);
+// Object2d& MeshCollider::setRot(float angle) {
+// 	Object2d::setRot(angle);
 
-	if(angle != getRot()) { // Prevent uneccesary updates
-		glm::mat4 r = glm::rotate(glm::mat4(1), glm::radians(getWorldRot()), glm::vec3(0, 0, 1));
-		std::vector<glm::vec2> copy_vertices(vertices);
-		// Rotate each vertex to get new mins and maxes
-		for(glm::vec2 vert : copy_vertices) {
-			vert = r * glm::vec4(vert, 0, 1);
-		}
+// 	if(angle != getRot()) { // Prevent uneccesary updates
+// 		glm::mat4 r = glm::rotate(glm::mat4(1), glm::radians(getWorldRot()), glm::vec3(0, 0, 1));
+// 		std::vector<glm::vec2> copy_vertices(vertices);
+// 		// Rotate each vertex to get new mins and maxes
+// 		for(glm::vec2 vert : copy_vertices) {
+// 			vert = r * glm::vec4(vert, 0, 1);
+// 		}
 
-		bounding_box.setBounds(copy_vertices);
-	}
+// 		bounding_box.setBounds(copy_vertices);
+// 	}
 
-	return *this;
-}
+// 	return *this;
+// }
 
-Object2d& MeshCollider::setScl(glm::vec2 scale) {
-	Object2d::setScl(scale);
+// Object2d& MeshCollider::setScl(glm::vec2 scale) {
+// 	Object2d::setScl(scale);
 
-	bounding_box.lower_left *= getWorldScl();
-	bounding_box.upper_right *= getWorldScl();
+// 	bounding_box.lower_left *= getWorldScl();
+// 	bounding_box.upper_right *= getWorldScl();
 
-	return *this;
-}
+// 	return *this;
+// }
 
 Line& debug_rvec() {
 	static Line l(glm::vec2(0), glm::vec2(0), glm::vec3(1, 0, 0));

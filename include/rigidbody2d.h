@@ -1,15 +1,20 @@
 #pragma once
 
 #include "object2d.h"
+#include "collider.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtx/vector_angle.hpp"
 
+#include <cmath>
+
 class Rigidbody2d : public Object {
 public:
-	Rigidbody2d(std::string id, float mass = 1);
+	Rigidbody2d(std::string id, std::unique_ptr<Collider> collider, float mass = 1);
+	Rigidbody2d(std::string id, std::vector<glm::vec2> mesh, float mass = 1);
 	~Rigidbody2d();
 
+	std::unique_ptr<Collider> collider;
 	glm::vec2 velocity = glm::vec2(0);
 	float angular_velocity = 0;
 
